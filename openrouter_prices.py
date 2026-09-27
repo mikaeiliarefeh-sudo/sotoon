@@ -1,9 +1,9 @@
 """Fetch OpenRouter model prices for selected providers and write them to Excel.
 
 OpenRouter prices come from its models API (USD per token, converted to USD
-per 1M tokens). For OpenAI and Anthropic models, the official prices from
-each provider's pricing page are added in extra columns next to each row;
-models that OpenRouter does not list are added as new rows.
+per 1M tokens). For each provider, the official prices from its own pricing
+page are added in extra columns next to each row; models that OpenRouter
+does not list are added as new rows.
 """
 import html
 import json
@@ -20,8 +20,12 @@ PROVIDERS = ["openai", "anthropic", "deepseek", "cohere"]
 URL = "https://openrouter.ai/api/v1/models"
 OPENAI_URL = "https://developers.openai.com/api/docs/pricing"
 ANTHROPIC_URL = "https://platform.claude.com/docs/en/about-claude/pricing"
-OFFICIAL_URLS = {"openai": OPENAI_URL, "anthropic": ANTHROPIC_URL}
-PROVIDER_TITLES = {"openai": "OpenAI", "anthropic": "Anthropic"}
+DEEPSEEK_URL = "https://api-docs.deepseek.com/quick_start/pricing"
+COHERE_URL = "https://cohere.com/pricing"
+OFFICIAL_URLS = {"openai": OPENAI_URL, "anthropic": ANTHROPIC_URL,
+                 "deepseek": DEEPSEEK_URL, "cohere": COHERE_URL}
+PROVIDER_TITLES = {"openai": "OpenAI", "anthropic": "Anthropic",
+                   "deepseek": "DeepSeek", "cohere": "Cohere"}
 OUT = sys.argv[1] if len(sys.argv) > 1 else "openrouter_prices.xlsx"
 
 # OpenRouter model name -> OpenAI pricing page name, where they differ.
@@ -31,6 +35,12 @@ ALIASES = {
     "gpt-chat-latest": "chat-latest",
     "o3-mini-high": "o3-mini",
     "o4-mini-high": "o4-mini",
+    # DeepSeek: legacy names are served and billed as V4.1 Flash.
+    "deepseek-v4-flash": "deepseek-v4.1-flash",
+    "deepseek-v4-flash-vision-exp": "deepseek-v4.1-flash",
+    # Cohere's pricing page uses short names for these versions.
+    "command-r-08-2024": "command-r",
+    "command-r7b-12-2024": "command-r7b",
 }
 
 
@@ -193,6 +203,80 @@ for head, body in md_tables(ant_md):
         for r in body:
             name, status = claude_name(r[0])
             add(name, "Batch", mtok(r[1]), None, None, mtok(r[2]), status, "anthropic")
+
+# ------------------------------------------------------------------ DeepSeek
+# One table: a MODEL VERSION row, then cache-hit / cache-miss / output rows,
+# each split into off-peak and peak prices, one column per model.
+
+
+def html_lines(page):
+    t = re.sub(r"<script.*?</script>|<style.*?</style>", "", page, flags=re.S)
+    t = re.sub(r"<(tr|h[1-6]|p|div|li|br)[^>]*>", "\n", t)
+    t = re.sub(r"<t[dh][^>]*>", " | ", t)
+    t = html.unescape(re.sub(r"<[^>]+>", "", t))
+    return [re.sub(r"\s+", " ", ln).strip() for ln in t.splitlines() if ln.strip()]
+
+
+ds_lines = html_lines(fetch(DEEPSEEK_URL))
+versions = next(ln for ln in ds_lines if ln.startswith("| MODEL VERSION |"))
+versions = [c.strip() for c in versions.split("|")[2:] if c.strip()]
+price_lines = [ln for ln in ds_lines if "PEAK" in ln and "$" in ln]
+prices = [[float(x) for x in re.findall(r"\$([\d.]+)", ln)] for ln in price_lines]
+# prices rows: hit off, hit peak, miss off, miss peak, output off, output peak
+for i, version in enumerate(versions):
+    hit_off, hit_peak, miss_off, miss_peak, out_off, out_peak = (row[i] for row in prices)
+    note = (f"Peak-hour price; off-peak (half): in {miss_off:g} / cached {hit_off:g} "
+            f"/ out {out_off:g}")
+    add(version.lower(), "Standard", miss_peak, hit_peak, None, out_peak, note, "deepseek")
+
+# -------------------------------------------------------------------- Cohere
+# The page's model cards are embedded as JSON (modelName, per, pricings);
+# older models are only mentioned in the FAQ text.
+
+
+def cohere_name(name):
+    return name.lower().replace("+", "-plus").replace(" ", "-")
+
+
+co_page = fetch(COHERE_URL).replace('\\"', '"')
+cards = list(re.finditer(r'"modelName":"([^"]*)","per":"([^"]*)"', co_page))
+for i, m in enumerate(cards):
+    end = cards[i + 1].start() if i + 1 < len(cards) else m.end() + 20000
+    seg = co_page[m.end():end]
+    name, per = m.group(1), m.group(2)
+    pr = re.search(r'"pricings":(\[.*?\])(?=,"primaryCta")', seg)
+    if not pr:
+        text = re.findall(r'"text":"([^"]*\$[^"]*)"', seg)
+        if text:
+            add(cohere_name(name), "Standard", None, None, None, None,
+                text[0].replace("$$", "$"), "cohere")
+        continue
+    p = json.loads(pr.group(1))[0]
+    inp, out = p.get("inputPrice"), p.get("outputPrice")
+    if per == "Free":
+        add(cohere_name(name), "Standard", 0, None, None, 0,
+            "Free (open-weights model)", "cohere")
+    elif p.get("overridePer"):
+        add(cohere_name(name), "Standard", None, None, None, None,
+            f"${inp:g} / {p['overridePer']}", "cohere")
+    elif p.get("outputLabel") == "Output":
+        add(cohere_name(name), "Standard", inp, None, None, out, "", "cohere")
+    else:
+        add(cohere_name(name), "Standard", inp, None, None, None,
+            f"{p['outputLabel']}: ${out:g} / 1M tokens", "cohere")
+
+co_text = " ".join(html_lines(co_page))
+for name, inp, out in re.findall(
+        r"([\w+.\- ]+?) pricing is \$([\d.]+)/1M tokens for input and \$([\d.]+)/1M tokens for output",
+        co_text):
+    add(cohere_name(name.strip()), "Standard", float(inp), None, None, float(out),
+        "Listed in Cohere pricing FAQ", "cohere")
+aya = re.search(r"Aya Expanse models \(([\dB]+) and ([\dB]+)\).*?\$([\d.]+)/1M tokens for input "
+                r"and \$([\d.]+)/1M tokens for output", co_text)
+if aya:
+    for size in aya.group(1, 2):
+        add(f"aya-expanse-{size.lower()}", "Standard", float(aya.group(3)), None, None,
+            float(aya.group(4)), "Listed in Cohere pricing FAQ", "cohere")
 
 # ------------------------------------------------------------------- Compare
 
