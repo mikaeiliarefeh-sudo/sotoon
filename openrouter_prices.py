@@ -1,9 +1,9 @@
 """Fetch OpenRouter model prices for selected providers and write them to Excel.
 
 OpenRouter prices come from its models API (USD per token, converted to USD
-per 1M tokens). For OpenAI models, the official prices from OpenAI's pricing
-page are added in extra columns next to each row; OpenAI models that
-OpenRouter does not list are added as new rows.
+per 1M tokens). For OpenAI and Anthropic models, the official prices from
+each provider's pricing page are added in extra columns next to each row;
+models that OpenRouter does not list are added as new rows.
 """
 import html
 import json
@@ -19,6 +19,9 @@ from openpyxl.utils import get_column_letter
 PROVIDERS = ["openai", "anthropic", "deepseek", "cohere"]
 URL = "https://openrouter.ai/api/v1/models"
 OPENAI_URL = "https://developers.openai.com/api/docs/pricing"
+ANTHROPIC_URL = "https://platform.claude.com/docs/en/about-claude/pricing"
+OFFICIAL_URLS = {"openai": OPENAI_URL, "anthropic": ANTHROPIC_URL}
+PROVIDER_TITLES = {"openai": "OpenAI", "anthropic": "Anthropic"}
 OUT = sys.argv[1] if len(sys.argv) > 1 else "openrouter_prices.xlsx"
 
 # OpenRouter model name -> OpenAI pricing page name, where they differ.
@@ -99,12 +102,12 @@ for attrs in re.findall(r"<astro-island([^>]*)>", page):
         p = json.loads(html.unescape(props.group(1)))
         tables.append((comp.group(1), {k: astro_decode(v) for k, v in p.items()}))
 
-# official[(name, tier)] = (input, cached input, cache write, output, note)
-official = {}
+# official[provider][(name, tier)] = (input, cached input, cache write, output, note)
+official = {pv: {} for pv in OFFICIAL_URLS}
 
 
-def add(name, tier, inp, cached, write, out, note=""):
-    official.setdefault((name, tier), (num(inp), num(cached), num(write), num(out), note))
+def add(name, tier, inp, cached, write, out, note="", provider="openai"):
+    official[provider].setdefault((name, tier), (num(inp), num(cached), num(write), num(out), note))
 
 
 for comp, p in tables:
@@ -150,9 +153,53 @@ for comp, p in tables:
                 r = grows[0]
                 add(model, "Standard", r[1], None, None, r[2], f"{r[0]}; est. {r[3]}")
 
-matched = set()
-OAI_HEADERS = ["OpenAI model", "OpenAI tier", "OpenAI Input $/1M", "OpenAI Cached input $/1M",
-               "OpenAI Cache write $/1M", "OpenAI Output $/1M", "Compare", "OpenAI note"]
+# ----------------------------------------------------------------- Anthropic
+# The docs page is also served as Markdown; prices look like "$2.50 / MTok".
+
+
+def mtok(cell):
+    m = re.search(r"\$([\d.,]+)\s*/\s*MTok", cell)
+    return float(m.group(1).replace(",", "")) if m else None
+
+
+def md_tables(md):
+    """Yield (header cells, body rows) for each Markdown table."""
+    lines = md.splitlines() + [""]
+    block = []
+    for line in lines:
+        if line.startswith("|"):
+            block.append([c.strip() for c in line.strip().strip("|").split("|")])
+        elif block:
+            if len(block) > 2:
+                yield block[0], block[2:]
+            block = []
+
+
+def claude_name(cell):
+    """'Claude Opus 4.1 ([retired, ...](...))' -> ('claude-opus-4.1', 'retired, ...')."""
+    status = re.search(r"\(\[([^\]]+)\]", cell)
+    name = re.sub(r"\s*\(.*", "", cell).strip()
+    return name.lower().replace(" ", "-"), status.group(1) if status else ""
+
+
+ant_md = fetch(ANTHROPIC_URL + ".md")
+for head, body in md_tables(ant_md):
+    if head[:2] == ["Model", "Base input tokens"]:
+        for r in body:
+            name, status = claude_name(r[0])
+            note = f"1h cache write: ${mtok(r[3]):g}" + (f"; {status}" if status else "")
+            add(name, "Standard", mtok(r[1]), mtok(r[4]), mtok(r[2]), mtok(r[5]), note, "anthropic")
+    elif head[:2] == ["Model", "Batch input"]:
+        for r in body:
+            name, status = claude_name(r[0])
+            add(name, "Batch", mtok(r[1]), None, None, mtok(r[2]), status, "anthropic")
+
+# ------------------------------------------------------------------- Compare
+
+matched = {pv: set() for pv in OFFICIAL_URLS}
+OAI_HEADERS = ["Official model", "Official tier", "Official Input $/1M",
+               "Official Cached input $/1M", "Official Cache write $/1M",
+               "Official Output $/1M", "Compare", "Official note"]
 
 
 def same(a, b):
@@ -160,22 +207,23 @@ def same(a, b):
 
 
 for r in rows:
-    if r[0] != "openai":
+    pv = r[0]
+    if pv not in official:
         r.extend([None] * len(OAI_HEADERS))
         continue
     base, _, variant = r[1].split("/", 1)[1].partition(":")
     tier = "Batch" if variant == "batch" else "Standard"
     name = ALIASES.get(base, base)
-    o = official.get((name, tier))
+    o = official[pv].get((name, tier))
     if not o:
-        r.extend([None] * 6 + ["Not on OpenAI page", None])
+        r.extend([None] * 6 + [f"Not on {PROVIDER_TITLES[pv]} page", None])
         continue
-    matched.add((name, tier))
+    matched[pv].add((name, tier))
     inp, cached, write, out, note = o
     if name != base:
         note = f"Matched as '{name}'" + (f"; {note}" if note else "")
     if inp is None and out is None:
-        cmp = "Not per-token on OpenAI"
+        cmp = f"Not per-token on {PROVIDER_TITLES[pv]}"
     elif same(r[4], inp) and same(r[5], out) and same(r[6], cached):
         cmp = "Same"
     else:
@@ -183,12 +231,14 @@ for r in rows:
     r.extend([name, tier, inp, cached, write, out, cmp, note or None])
 
 new_rows = []
-for (name, tier), (inp, cached, write, out, note) in official.items():
-    if (name, tier) in matched:
-        continue
-    new_rows.append(["openai", None, None, None] + [None] * 8
-                    + [name, tier, inp, cached, write, out, "Only on OpenAI", note or None])
-new_rows.sort(key=lambda r: (r[13] != "Standard", r[12]))
+for pv, prices in official.items():
+    for (name, tier), (inp, cached, write, out, note) in prices.items():
+        if (name, tier) in matched[pv]:
+            continue
+        new_rows.append([pv, None, None, None] + [None] * 8
+                        + [name, tier, inp, cached, write, out,
+                           f"Only on {PROVIDER_TITLES[pv]}", note or None])
+new_rows.sort(key=lambda r: (PROVIDERS.index(r[0]), r[13] != "Standard", r[12]))
 
 # --------------------------------------------------------------------- Excel
 
@@ -211,7 +261,7 @@ titles = {"All": "All", "openai": "OpenAI", "anthropic": "Anthropic",
 for i, (key, data) in enumerate(sheets):
     ws = wb.active if i == 0 else wb.create_sheet()
     ws.title = titles[key]
-    with_oai = key in ("All", "openai")
+    with_oai = key == "All" or key in OFFICIAL_URLS
     ncols = len(headers) if with_oai else 12
     ws.append(headers[:ncols])
     for r in data:
@@ -233,7 +283,7 @@ for i, (key, data) in enumerate(sheets):
             for c in row[14:18]:
                 c.number_format = "$#,##0.00##"
             status = row[18].value
-            if status == "Only on OpenAI":
+            if status and status.startswith("Only on "):
                 for c in row:
                     c.fill = NEW_FILL
             elif status in CMP_FILLS:
@@ -241,8 +291,11 @@ for i, (key, data) in enumerate(sheets):
     ws.append([])
     ws.append([f"Source: {URL} — fetched {date.today().isoformat()}. Empty = not applicable."])
     if with_oai:
-        ws.append([f"Green columns: official OpenAI prices from {OPENAI_URL} (Standard tier; "
-                   "Batch tier for ':batch' models). Yellow rows: models OpenRouter does not list."])
+        for pv, url in OFFICIAL_URLS.items():
+            if key in ("All", pv):
+                ws.append([f"Green columns ({PROVIDER_TITLES[pv]}): official prices from {url}"])
+        ws.append(["Standard tier, or Batch tier for ':batch' models. "
+                   "Yellow rows: models OpenRouter does not list."])
 
 wb.save(OUT)
-print(f"{len(rows)} OpenRouter models + {len(new_rows)} OpenAI-only rows -> {OUT}")
+print(f"{len(rows)} OpenRouter models + {len(new_rows)} official-only rows -> {OUT}")
