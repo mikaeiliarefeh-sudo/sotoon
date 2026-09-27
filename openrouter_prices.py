@@ -9,6 +9,7 @@ import html
 import json
 import re
 import sys
+import time
 import urllib.request
 from datetime import date
 
@@ -56,10 +57,16 @@ def num(v):
     return v if isinstance(v, (int, float)) and not isinstance(v, bool) else None
 
 
-def fetch(url):
+def fetch(url, attempts=4):
     req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-    with urllib.request.urlopen(req, timeout=60) as r:
-        return r.read().decode("utf-8")
+    for attempt in range(attempts):
+        try:
+            with urllib.request.urlopen(req, timeout=60) as r:
+                return r.read().decode("utf-8")
+        except OSError:  # includes URLError and dropped TLS connections
+            if attempt == attempts - 1:
+                raise
+            time.sleep(2 ** (attempt + 1))
 
 
 # ---------------------------------------------------------------- OpenRouter

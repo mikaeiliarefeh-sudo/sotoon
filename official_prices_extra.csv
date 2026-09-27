@@ -1,0 +1,124 @@
+maker,model,official_model,input_per_1m,cached_input_per_1m,output_per_1m,note,source
+google,gemini-3.8-flash,gemini-3.8-flash,0.75,0.075,3.75,Promo price through 2026-12-31; from 2027-01-01: in 1.5 / cached 0.15 / out 7.5,https://ai.google.dev/gemini-api/docs/pricing
+google,gemini-3.7-flash,gemini-3.7-flash,0.75,0.075,3.75,Promo price through 2026-12-31; from 2027-01-01: in 1.5 / cached 0.15 / out 7.5,https://ai.google.dev/gemini-api/docs/pricing
+google,gemini-3.6-flash,gemini-3.6-flash,0.75,0.075,3.75,Promo price through 2026-12-31; from 2027-01-01: in 1.5 / cached 0.15 / out 7.5,https://ai.google.dev/gemini-api/docs/pricing
+google,gemini-3.5-flash,gemini-3.5-flash,1.5,0.15,9.0,,https://ai.google.dev/gemini-api/docs/pricing
+google,gemini-3.5-flash-lite,gemini-3.5-flash-lite,0.3,0.03,2.5,,https://ai.google.dev/gemini-api/docs/pricing
+google,gemini-3.1-flash-lite,gemini-3.1-flash-lite,0.25,0.025,1.5,Text/image/video input; audio input $0.50,https://ai.google.dev/gemini-api/docs/pricing
+google,gemini-3.1-flash-lite-preview,gemini-3.1-flash-lite,0.25,0.025,1.5,Preview not listed; priced as GA gemini-3.1-flash-lite,https://ai.google.dev/gemini-api/docs/pricing
+google,gemini-3.1-pro-preview,gemini-3.1-pro-preview,2.0,0.2,12.0,Prompts <=200K tokens,https://ai.google.dev/gemini-api/docs/pricing
+google,gemini-3.1-pro-preview-customtools,gemini-3.1-pro-preview,2.0,0.2,12.0,Custom-tools variant of Gemini 3.1 Pro Preview; prompts <=200K tokens,https://ai.google.dev/gemini-api/docs/pricing
+google,gemini-3.1-flash-image,gemini-3.1-flash-image,0.5,,3.0,Text output; image output $60/1M (~$0.067 per 1K image),https://ai.google.dev/gemini-api/docs/pricing
+google,gemini-3.1-flash-image-preview,gemini-3.1-flash-image,0.5,,3.0,Priced as GA; image output $60/1M (~$0.067 per 1K image),https://ai.google.dev/gemini-api/docs/pricing
+google,gemini-3.1-flash-lite-image,gemini-3.1-flash-lite-image,0.25,,1.5,Text output; image output $30/1M,https://ai.google.dev/gemini-api/docs/pricing
+google,gemini-3-flash-preview,gemini-3-flash-preview,0.5,0.05,3.0,Text/image/video input; audio input $1.00,https://ai.google.dev/gemini-api/docs/pricing
+google,gemini-3-pro-image,gemini-3-pro-image,2.0,,12.0,Text output; image output $120/1M (~$0.134 per 1K/2K image),https://ai.google.dev/gemini-api/docs/pricing
+google,gemini-3-pro-image-preview,gemini-3-pro-image,2.0,,12.0,Priced as GA; image output $120/1M,https://ai.google.dev/gemini-api/docs/pricing
+google,gemini-2.5-pro,gemini-2.5-pro,1.25,0.125,10.0,Prompts <=200K tokens,https://ai.google.dev/gemini-api/docs/pricing
+google,gemini-2.5-flash,gemini-2.5-flash,0.3,0.03,2.5,Text/image/video input; audio input $1.00,https://ai.google.dev/gemini-api/docs/pricing
+google,gemini-2.5-flash-lite,gemini-2.5-flash-lite,0.1,0.01,0.4,Text/image/video input; audio input $0.30,https://ai.google.dev/gemini-api/docs/pricing
+google,gemini-2.5-flash-image,gemini-2.5-flash-image,0.3,,,Image output $0.039 per image,https://ai.google.dev/gemini-api/docs/pricing
+google,lyria-3-clip-preview,Lyria 3,,,,Per song: $0.04 / $0.08 (see page),https://ai.google.dev/gemini-api/docs/pricing
+google,lyria-3-pro-preview,Lyria 3,,,,Per song: $0.04 / $0.08 (see page),https://ai.google.dev/gemini-api/docs/pricing
+google,gemma*,Gemma,,,,Gemini API offers Gemma on the free tier only; no paid price,https://ai.google.dev/gemini-api/docs/pricing
+mistralai,mistral-medium-3-5,Mistral Medium 3.5,1.5,,7.5,Cached input -90%,https://mistral.ai/pricing/api/
+mistralai,mistral-large-2512,Mistral Large 3,0.5,,1.5,Cached input -90%,https://mistral.ai/pricing/api/
+mistralai,mistral-small-2603,Mistral Small 4 (26.03),0.15,,0.6,Cached input -90%,https://mistral.ai/pricing/api/
+mistralai,ministral-3b-2512,Ministral 3 (3B),0.1,,0.1,,https://mistral.ai/pricing/api/
+mistralai,ministral-8b-2512,Ministral 3 (8B),0.15,,0.15,,https://mistral.ai/pricing/api/
+mistralai,ministral-14b-2512,Ministral 3 (14B),0.2,,0.2,,https://mistral.ai/pricing/api/
+mistralai,codestral-2508,Codestral,0.3,,0.9,Page lists current Codestral without a version,https://mistral.ai/pricing/api/
+mistralai,voxtral-small-24b-2507,Voxtral Small,0.1,,0.4,Text input; audio input $0.004/min,https://mistral.ai/pricing/api/
+x-ai,grok-4.6,grok-4.6,2.0,0.5,6.0,Prompts <200K tokens; >=200K prompts cost double,https://docs.x.ai/docs/models
+x-ai,grok-4.5,grok-4.5,2.0,0.3,6.0,Prompts <200K tokens; >=200K prompts cost double,https://docs.x.ai/docs/models
+x-ai,grok-4.3,grok-4.3,1.25,0.2,2.5,Prompts <200K tokens; >=200K prompts cost double,https://docs.x.ai/docs/models
+x-ai,grok-4.20,grok-4.20-0309-reasoning,1.25,0.2,2.5,Prompts <200K tokens; >=200K prompts cost double,https://docs.x.ai/docs/models
+x-ai,grok-4.20-multi-agent,grok-4.20-multi-agent-0309,1.25,0.2,2.5,Prompts <200K tokens; >=200K prompts cost double,https://docs.x.ai/docs/models
+x-ai,grok-build-0.1,grok-build-0.1,1.0,0.2,2.0,Prompts <200K tokens; >=200K prompts cost double,https://docs.x.ai/docs/models
+z-ai,glm-5.3,GLM-5.3,1.4,0.26,4.4,,https://docs.z.ai/guides/overview/pricing
+z-ai,glm-5.3-flash,GLM-5.3-Flash,0.15,0.03,0.5,,https://docs.z.ai/guides/overview/pricing
+z-ai,glm-5.2,GLM-5.2,1.4,0.26,4.4,,https://docs.z.ai/guides/overview/pricing
+z-ai,glm-5.1,GLM-5.1,1.4,0.26,4.4,,https://docs.z.ai/guides/overview/pricing
+z-ai,glm-5,GLM-5,1.0,0.2,3.2,,https://docs.z.ai/guides/overview/pricing
+z-ai,glm-4.7,GLM-4.7,0.6,0.11,2.2,,https://docs.z.ai/guides/overview/pricing
+z-ai,glm-4.7-flash,GLM-4.7-Flash,0.0,0.0,0.0,Free,https://docs.z.ai/guides/overview/pricing
+z-ai,glm-4.6,GLM-4.6,0.6,0.11,2.2,,https://docs.z.ai/guides/overview/pricing
+z-ai,glm-4.5,GLM-4.5,0.6,0.11,2.2,,https://docs.z.ai/guides/overview/pricing
+z-ai,glm-4.5-air,GLM-4.5-Air,0.2,0.03,1.1,,https://docs.z.ai/guides/overview/pricing
+z-ai,glm-4.6v,GLM-4.6V,0.3,0.05,0.9,,https://docs.z.ai/guides/overview/pricing
+z-ai,glm-4.5v,GLM-4.5V,0.6,0.11,1.8,,https://docs.z.ai/guides/overview/pricing
+moonshotai,kimi-k3,kimi-k3,3.0,0.3,15.0,Cache write $3 (5-min TTL) / $6 (1-hour TTL),https://platform.kimi.ai/docs/pricing/chat
+moonshotai,kimi-k2.7-code,kimi-k2.7-code,0.95,0.19,4.0,,https://platform.kimi.ai/docs/pricing/chat
+moonshotai,kimi-k2.6,kimi-k2.6,0.95,0.16,4.0,,https://platform.kimi.ai/docs/pricing/chat
+minimax,minimax-m2.7,MiniMax-M2.7,0.3,0.06,1.2,Cache write $0.375,https://platform.minimax.io/docs/guides/pricing-paygo
+perplexity,sonar,Sonar,1.0,,1.0,Plus request fee $5/$8/$12 per 1K (low/medium/high search context),https://docs.perplexity.ai/getting-started/pricing
+perplexity,sonar-pro,Sonar Pro,3.0,,15.0,Plus request fee $6/$10/$14 per 1K,https://docs.perplexity.ai/getting-started/pricing
+perplexity,sonar-pro-search,Sonar Pro (search_type: pro),3.0,,15.0,Plus request fee $14/$18/$22 per 1K,https://docs.perplexity.ai/getting-started/pricing
+perplexity,sonar-reasoning-pro,Sonar Reasoning Pro,2.0,,8.0,Plus request fee $6/$10/$14 per 1K,https://docs.perplexity.ai/getting-started/pricing
+perplexity,sonar-deep-research,Sonar Deep Research,2.0,,8.0,"Plus citation $2/1M, reasoning $3/1M, search $5 per 1K queries",https://docs.perplexity.ai/getting-started/pricing
+amazon,nova-2-lite-v1,Amazon Nova 2 Lite,0.3,,2.5,"Global cross-region, Standard tier; in-region $0.33 / $2.75",https://aws.amazon.com/bedrock/pricing/
+amazon,nova-micro-v1,Amazon Nova Micro,0.035,,0.14,"US East (N. Virginia), Standard tier",https://aws.amazon.com/bedrock/pricing/
+amazon,nova-lite-v1,Amazon Nova Lite,0.06,,0.24,"US East (N. Virginia), Standard tier",https://aws.amazon.com/bedrock/pricing/
+amazon,nova-pro-v1,Amazon Nova Pro,0.8,,3.2,"US East (N. Virginia), Standard tier",https://aws.amazon.com/bedrock/pricing/
+amazon,nova-premier-v1,Amazon Nova Premier,2.5,,12.5,"US East (N. Virginia), Standard tier",https://aws.amazon.com/bedrock/pricing/
+stepfun,step-3.7-flash,step-3.7-flash,0.2,0.04,1.15,,https://platform.stepfun.ai/docs/en/pricing/details
+stepfun,step-3.5-flash,step-3.5-flash,0.1,0.02,0.3,,https://platform.stepfun.ai/docs/en/pricing/details
+upstage,solar-pro4,Solar Pro 4,0.3,0.06,1.2,List price; promo 2026-09-11 to 2026-10-10: in 0.09 / cached 0.018 / out 0.36,https://www.upstage.ai/pricing
+upstage,solar-pro-3,Solar Pro 3,0.15,0.015,0.6,,https://www.upstage.ai/pricing
+writer,palmyra-x5,palmyra-x5,0.6,,6.0,Deprecated on 2026-12-14; migrate to palmyra-x6,https://dev.writer.com/home/pricing
+rekaai,reka-edge,Reka Edge,0.1,,0.1,,https://docs.reka.ai/pricing
+rekaai,reka-flash-3,Reka Flash,0.8,,2.0,Page lists 'Reka Flash' without a version,https://docs.reka.ai/pricing
+relace,relace-apply-3,relace-apply-3,0.8,,1.2,,https://relace.ai/pricing
+relace,relace-search,relace-search,1.0,,3.0,,https://relace.ai/pricing
+qwen,qwen-plus,qwen-plus,0.4,,1.2,International (Singapore) list price; tier 0<Token≤256K; thinking output $4; lowest price on the page (other regions/deployments): in 0.115 / out 0.287,https://www.alibabacloud.com/help/en/model-studio/model-pricing
+qwen,qwen-plus-2025-07-28,qwen-plus-2025-07-28,0.4,,1.2,International (Singapore) list price; tier 0<Token≤256K; thinking output $4; lowest price on the page (other regions/deployments): in 0.115 / out 0.287,https://www.alibabacloud.com/help/en/model-studio/model-pricing
+qwen,qwen3-14b,qwen3-14b,0.35,,1.4,International (Singapore) list price; thinking output $4.2; lowest price on the page (other regions/deployments): in 0.144 / out 0.574,https://www.alibabacloud.com/help/en/model-studio/model-pricing
+qwen,qwen3-235b-a22b,qwen3-235b-a22b,0.7,,2.8,International (Singapore) list price; thinking output $8.4; lowest price on the page (other regions/deployments): in 0.287 / out 1.147,https://www.alibabacloud.com/help/en/model-studio/model-pricing
+qwen,qwen3-235b-a22b-2507,qwen3-235b-a22b-instruct-2507,0.23,,0.92,International (Singapore) list price,https://www.alibabacloud.com/help/en/model-studio/model-pricing
+qwen,qwen3-235b-a22b-thinking-2507,qwen3-235b-a22b-thinking-2507,0.23,,2.3,International (Singapore) list price; thinking-mode output,https://www.alibabacloud.com/help/en/model-studio/model-pricing
+qwen,qwen3-30b-a3b,qwen3-30b-a3b,0.2,,0.8,International (Singapore) list price; thinking output $2.4; lowest price on the page (other regions/deployments): in 0.108 / out 0.431,https://www.alibabacloud.com/help/en/model-studio/model-pricing
+qwen,qwen3-30b-a3b-instruct-2507,qwen3-30b-a3b-instruct-2507,0.2,,0.8,International (Singapore) list price; lowest price on the page (other regions/deployments): in 0.108 / out 0.431,https://www.alibabacloud.com/help/en/model-studio/model-pricing
+qwen,qwen3-30b-a3b-thinking-2507,qwen3-30b-a3b-thinking-2507,0.2,,2.4,International (Singapore) list price; thinking-mode output; lowest price on the page (other regions/deployments): in 0.108 / out 1.076,https://www.alibabacloud.com/help/en/model-studio/model-pricing
+qwen,qwen3-32b,qwen3-32b,0.16,,0.64,International (Singapore) list price,https://www.alibabacloud.com/help/en/model-studio/model-pricing
+qwen,qwen3-8b,qwen3-8b,0.18,,0.7,International (Singapore) list price; thinking output $2.1; lowest price on the page (other regions/deployments): in 0.072 / out 0.287,https://www.alibabacloud.com/help/en/model-studio/model-pricing
+qwen,qwen3-coder,qwen3-coder-480b-a35b-instruct,1.5,,7.5,International (Singapore) list price; tier 0<Token≤32K; lowest price on the page (other regions/deployments): in 0.861 / out 3.441,https://www.alibabacloud.com/help/en/model-studio/model-pricing
+qwen,qwen3-coder-30b-a3b-instruct,qwen3-coder-30b-a3b-instruct,0.45,,2.25,International (Singapore) list price; tier 0<Token≤32K; lowest price on the page (other regions/deployments): in 0.216 / out 0.861,https://www.alibabacloud.com/help/en/model-studio/model-pricing
+qwen,qwen3-coder-flash,qwen3-coder-flash,0.3,,1.5,International (Singapore) list price; tier 0<Token≤32K; lowest price on the page (other regions/deployments): in 0.144 / out 0.574,https://www.alibabacloud.com/help/en/model-studio/model-pricing
+qwen,qwen3-coder-next,qwen3-coder-next,0.3,,1.5,International (Singapore) list price; tier 0<Token≤32K; lowest price on the page (other regions/deployments): in 0.144 / out 0.574,https://www.alibabacloud.com/help/en/model-studio/model-pricing
+qwen,qwen3-coder-plus,qwen3-coder-plus,1.0,,5.0,International (Singapore) list price; tier 0<Token≤32K; lowest price on the page (other regions/deployments): in 0.574 / out 2.294,https://www.alibabacloud.com/help/en/model-studio/model-pricing
+qwen,qwen3-max,qwen3-max,1.2,,6.0,International (Singapore) list price; tier 0<Token≤32K; lowest price on the page (other regions/deployments): in 0.359 / out 1.434,https://www.alibabacloud.com/help/en/model-studio/model-pricing
+qwen,qwen3-max-thinking,qwen3-max,1.2,,6.0,International (Singapore) list price; tier 0<Token≤32K; lowest price on the page (other regions/deployments): in 0.359 / out 1.434,https://www.alibabacloud.com/help/en/model-studio/model-pricing
+qwen,qwen3-next-80b-a3b-instruct,qwen3-next-80b-a3b-instruct,0.15,,1.2,International (Singapore) list price; lowest price on the page (other regions/deployments): in 0.144 / out 0.574,https://www.alibabacloud.com/help/en/model-studio/model-pricing
+qwen,qwen3-next-80b-a3b-thinking,qwen3-next-80b-a3b-thinking,0.15,,1.2,International (Singapore) list price; thinking-mode output; lowest price on the page (other regions/deployments): in 0.144 / out 1.434,https://www.alibabacloud.com/help/en/model-studio/model-pricing
+qwen,qwen3-vl-235b-a22b-instruct,qwen3-vl-235b-a22b-instruct,0.4,,1.6,International (Singapore) list price; lowest price on the page (other regions/deployments): in 0.287 / out 1.147,https://www.alibabacloud.com/help/en/model-studio/model-pricing
+qwen,qwen3-vl-235b-a22b-thinking,qwen3-vl-235b-a22b-thinking,0.4,,4.0,International (Singapore) list price; lowest price on the page (other regions/deployments): in 0.287 / out 2.867,https://www.alibabacloud.com/help/en/model-studio/model-pricing
+qwen,qwen3-vl-30b-a3b-instruct,qwen3-vl-30b-a3b-instruct,0.2,,0.8,International (Singapore) list price; lowest price on the page (other regions/deployments): in 0.108 / out 0.431,https://www.alibabacloud.com/help/en/model-studio/model-pricing
+qwen,qwen3-vl-30b-a3b-thinking,qwen3-vl-30b-a3b-thinking,0.2,,2.4,International (Singapore) list price; lowest price on the page (other regions/deployments): in 0.108 / out 1.076,https://www.alibabacloud.com/help/en/model-studio/model-pricing
+qwen,qwen3-vl-32b-instruct,qwen3-vl-32b-instruct,0.16,,0.64,International (Singapore) list price,https://www.alibabacloud.com/help/en/model-studio/model-pricing
+qwen,qwen3-vl-8b-instruct,qwen3-vl-8b-instruct,0.18,,0.7,International (Singapore) list price; lowest price on the page (other regions/deployments): in 0.072 / out 0.287,https://www.alibabacloud.com/help/en/model-studio/model-pricing
+qwen,qwen3-vl-8b-thinking,qwen3-vl-8b-thinking,0.18,,2.1,International (Singapore) list price; lowest price on the page (other regions/deployments): in 0.072 / out 0.717,https://www.alibabacloud.com/help/en/model-studio/model-pricing
+qwen,qwen3.5-122b-a10b,qwen3.5-122b-a10b,0.4,,3.2,International (Singapore) list price; tier 0<Token≤256K; lowest price on the page (other regions/deployments): in 0.115 / out 0.917,https://www.alibabacloud.com/help/en/model-studio/model-pricing
+qwen,qwen3.5-27b,qwen3.5-27b,0.3,,2.4,International (Singapore) list price; tier 0<Token≤256K; lowest price on the page (other regions/deployments): in 0.086 / out 0.688,https://www.alibabacloud.com/help/en/model-studio/model-pricing
+qwen,qwen3.5-35b-a3b,qwen3.5-35b-a3b,0.25,,2.0,International (Singapore) list price; tier 0<Token≤256K; lowest price on the page (other regions/deployments): in 0.057 / out 0.459,https://www.alibabacloud.com/help/en/model-studio/model-pricing
+qwen,qwen3.5-397b-a17b,qwen3.5-397b-a17b,0.6,,3.6,International (Singapore) list price; tier 0<Token≤256K; lowest price on the page (other regions/deployments): in 0.172 / out 1.032,https://www.alibabacloud.com/help/en/model-studio/model-pricing
+qwen,qwen3.5-flash-02-23,qwen3.5-flash-2026-02-23,0.1,,0.4,International (Singapore) list price; tier 0<Token≤1M; lowest price on the page (other regions/deployments): in 0.029 / out 0.287,https://www.alibabacloud.com/help/en/model-studio/model-pricing
+qwen,qwen3.5-plus-02-15,qwen3.5-plus-2026-02-15,0.4,,2.4,International (Singapore) list price; tier 0<Token≤256K; lowest price on the page (other regions/deployments): in 0.115 / out 0.688,https://www.alibabacloud.com/help/en/model-studio/model-pricing
+qwen,qwen3.5-plus-20260420,qwen3.5-plus-2026-04-20,0.4,,2.4,International (Singapore) list price; tier 0<Token≤256K; lowest price on the page (other regions/deployments): in 0.115 / out 0.688,https://www.alibabacloud.com/help/en/model-studio/model-pricing
+qwen,qwen3.6-27b,qwen3.6-27b,0.6,,3.6,International (Singapore) list price; tier 0<Token≤256K; lowest price on the page (other regions/deployments): in 0.412564 / out 2.47538,https://www.alibabacloud.com/help/en/model-studio/model-pricing
+qwen,qwen3.6-35b-a3b,qwen3.6-35b-a3b,0.375,,2.25,International (Singapore) list price; tier 0<Token≤256K; lowest price on the page (other regions/deployments): in 0.248 / out 1.485,https://www.alibabacloud.com/help/en/model-studio/model-pricing
+qwen,qwen3.6-flash,qwen3.6-flash,0.25,,1.5,International (Singapore) list price; tier 0<Token≤256K; lowest price on the page (other regions/deployments): in 0.165 / out 0.99,https://www.alibabacloud.com/help/en/model-studio/model-pricing
+qwen,qwen3.6-max-preview,qwen3.6-max-preview,1.3,,7.8,International (Singapore) list price; tier 0<Token≤128K; lowest price on the page (other regions/deployments): in 1.238 / out 7.426,https://www.alibabacloud.com/help/en/model-studio/model-pricing
+qwen,qwen3.6-plus,qwen3.6-plus,0.5,,3.0,International (Singapore) list price; tier 0<Token≤256K; lowest price on the page (other regions/deployments): in 0.276 / out 1.651,https://www.alibabacloud.com/help/en/model-studio/model-pricing
+qwen,qwen3.7-flash,qwen3.7-flash,0.03,,0.13,International (Singapore) list price; tier 0<Token≤32K; lowest price on the page (other regions/deployments): in 0.028 / out 0.11,https://www.alibabacloud.com/help/en/model-studio/model-pricing
+qwen,qwen3.7-max,qwen3.7-max,2.5,,7.5,International (Singapore) list price; tier 0<Token≤1M; lowest price on the page (other regions/deployments): in 1.65 / out 4.951,https://www.alibabacloud.com/help/en/model-studio/model-pricing
+qwen,qwen3.7-plus,qwen3.7-plus,0.4,,1.6,International (Singapore) list price; tier 0<Token≤256K; list price; limited-time 20% off; lowest price on the page (other regions/deployments): in 0.276 / out 1.101,https://www.alibabacloud.com/help/en/model-studio/model-pricing
+qwen,qwen3.8-2.4t-a95b,qwen3.8-2.4t-a95b,2.0,,6.0,International (Singapore) list price; tier 0<Token≤1M; lowest price on the page (other regions/deployments): in 1.65 / out 4.951,https://www.alibabacloud.com/help/en/model-studio/model-pricing
+qwen,qwen3.8-27b,qwen3.8-27b,0.5,,3.0,International (Singapore) list price; tier 0<Token≤1M; lowest price on the page (other regions/deployments): in 0.424 / out 1.696,https://www.alibabacloud.com/help/en/model-studio/model-pricing
+qwen,qwen3.8-flash,qwen3.8-flash,0.15,,0.47,International (Singapore) list price; tier 0<Token≤1M; lowest price on the page (other regions/deployments): in 0.113 / out 0.382,https://www.alibabacloud.com/help/en/model-studio/model-pricing
+qwen,qwen3.8-max-0902,qwen3.8-max-0902,2.0,,6.0,International (Singapore) list price; tier 0<Token≤1M; lowest price on the page (other regions/deployments): in 1.65 / out 4.951,https://www.alibabacloud.com/help/en/model-studio/model-pricing
+sao10k,*,,,,,Community fine-tune; no first-party API,
+thedrummer,*,,,,,Community fine-tune; no first-party API,
+gryphe,*,,,,,Community fine-tune; no first-party API,
+undi95,*,,,,,Community fine-tune; no first-party API,
+anthracite-org,*,,,,,Community fine-tune; no first-party API,
+cognitivecomputations,*,,,,,Community fine-tune; no first-party API,

@@ -3,10 +3,14 @@
 Usage: python3 sotoon_price_comparison.py <sotoon-prices.xlsx> [output.xlsx]
 
 Sotoon's price list is the base. For each row, the OpenRouter price (from its
-models API) and the official provider price (OpenAI, Anthropic, DeepSeek,
-Cohere pricing pages, collected by openrouter_prices.py) are added next to it,
-together with Sotoon's markup over each.
+models API) and the official provider price are added next to it, together
+with Sotoon's markup over each. Official prices come from two places:
+openrouter_prices.py scrapes OpenAI, Anthropic, DeepSeek and Cohere live, and
+official_prices_extra.csv holds the other makers' prices, each row with the
+page it was read from.
 """
+import csv
+import os
 import re
 import sys
 from datetime import date
@@ -20,7 +24,23 @@ import openrouter_prices as op
 SRC = sys.argv[1]
 OUT = sys.argv[2] if len(sys.argv) > 2 else "sotoon_price_comparison.xlsx"
 
+EXTRA_CSV = os.path.join(os.path.dirname(os.path.abspath(__file__)), "official_prices_extra.csv")
+
 or_prices = {m["id"]: m.get("pricing", {}) for m in op.models}
+
+
+def num_or_none(v):
+    return float(v) if v not in (None, "") else None
+
+
+# extra[maker] = [(model pattern, official model, input, cached, output, note, source)]
+extra = {}
+with open(EXTRA_CSV, newline="") as f:
+    for r in csv.DictReader(f):
+        extra.setdefault(r["maker"], []).append((
+            r["model"], r["official_model"] or None, num_or_none(r["input_per_1m"]),
+            num_or_none(r["cached_input_per_1m"]), num_or_none(r["output_per_1m"]),
+            r["note"] or None, r["source"] or None))
 
 
 def openrouter_id(model_name, provider, underlying):
@@ -35,19 +55,37 @@ def openrouter_id(model_name, provider, underlying):
     return name
 
 
-def official_price(or_id):
-    """(model, input, cached, cache write, output, note) from the provider's page."""
-    if not or_id or "/" not in or_id:
+def official_price(or_id, model_name, provider):
+    """(model, input, cached, cache write, output, note, source) from the maker's page.
+
+    When no price is found, the model fields are None and the note says why.
+    """
+    key = or_id or model_name.lower()
+    if "/" not in key:
         return None
-    provider, rest = or_id.lstrip("~").split("/", 1)
-    prices = op.official.get(provider)
-    if prices is None:
-        return None
+    maker, rest = key.lstrip("~").split("/", 1)
     base, _, variant = rest.partition(":")
     tier = "Batch" if variant == "batch" else "Standard"
-    name = op.ALIASES.get(base, base)
-    o = prices.get((name, tier))
-    return (name,) + o if o else None
+    prices = op.official.get(maker)
+    if prices is not None:
+        name = op.ALIASES.get(base, base)
+        o = prices.get((name, tier))
+        if o:
+            return (name,) + o + (op.OFFICIAL_URLS[maker],)
+    for pattern, name, inp, cached, out, note, source in extra.get(maker, []):
+        exact = pattern == base
+        prefix = pattern.endswith("*") and base.startswith(pattern[:-1])
+        if tier == "Standard" and (exact or prefix):
+            return (name, inp, cached, None, out, note, source)
+    if provider == "hosted_vllm":
+        reason = "Self-hosted by Sotoon"
+    elif key.startswith("~"):
+        reason = "Alias to the latest model; no fixed official price"
+    elif prices is not None or maker in extra:
+        reason = f"Not listed on {op.PROVIDER_TITLES.get(maker, maker)}'s official pricing page"
+    else:
+        reason = "No official per-token price page found"
+    return (None, None, None, None, None, reason, None)
 
 
 def markup(ours, theirs):
@@ -74,9 +112,10 @@ headers = [
     # Markups
     "Markup vs OpenRouter (input)", "Markup vs OpenRouter (output)",
     "Markup vs Official (input)", "Markup vs Official (output)",
+    "Official source",
 ]
-GROUPS = [(1, 8, "305496"), (9, 13, "7030A0"), (14, 19, "548235"), (20, 23, "C65911")]
-widths = [40, 12, 42, 11, 12, 12, 13, 13, 40, 12, 12, 13, 13, 24, 12, 12, 13, 13, 40, 14, 14, 14, 14]
+GROUPS = [(1, 8, "305496"), (9, 13, "7030A0"), (14, 19, "548235"), (20, 23, "C65911"), (24, 24, "548235")]
+widths = [40, 12, 42, 11, 12, 12, 13, 13, 40, 12, 12, 13, 13, 24, 12, 12, 13, 13, 50, 14, 14, 14, 14, 50]
 
 out_rows = []
 for r in src_rows:
@@ -89,18 +128,19 @@ for r in src_rows:
                   ("prompt", "completion", "input_cache_read", "input_cache_write")]
     else:
         theirs = [None] * 4
-    off = official_price(or_id)
+    off = official_price(or_id, name, provider)
     if off:
-        o_name, o_in, o_cached, o_write, o_out, o_note = off
+        o_name, o_in, o_cached, o_write, o_out, o_note, o_source = off
         official = [o_name, o_in, o_out, o_cached, o_write, o_note or None]
     else:
-        official = [None] * 6
+        official, o_source = [None] * 6, None
     out_rows.append(
         [name, provider, underlying, r[col["mode"]]] + ours
         + [or_id if p else None] + theirs
         + official
         + [markup(ours[0], theirs[0]), markup(ours[1], theirs[1]),
            markup(ours[0], official[1]), markup(ours[1], official[2])]
+        + [o_source]
     )
 
 wb = Workbook()
@@ -132,6 +172,8 @@ ws.append([f"Base: Sotoon price list ({SRC.rsplit('/', 1)[-1]}). "
            f"OpenRouter: {op.URL}, fetched {date.today().isoformat()}."])
 for pv, url in op.OFFICIAL_URLS.items():
     ws.append([f"Official ({op.PROVIDER_TITLES[pv]}): {url}"])
+ws.append(["Other makers: official_prices_extra.csv (read 2026-09-27); "
+           "each row's page is in the 'Official source' column."])
 ws.append(["Markup = Sotoon price / other price - 1. Red = Sotoon is cheaper than that source."])
 
 # ------------------------------------------------------------ Summary sheet
@@ -142,7 +184,7 @@ ws.append(["Markup = Sotoon price / other price - 1. Red = Sotoon is cheaper tha
 EPS = 0.001
 TYPICAL = {"openrouter": 0.15, "anthropic": 0.15, "openai": 0.3225}  # 1.15, 1.15 x 1.15
 
-sm = wb.create_sheet("خلاصه", 0)
+sm = wb.create_sheet("خلاصه")
 sm.sheet_view.rightToLeft = True
 TITLE_FONT = Font(bold=True, size=13, color="1F3864")
 HEAD_FILL = PatternFill("solid", fgColor="305496")
@@ -265,6 +307,13 @@ def no_match_reason(r):
 
 section("۷. مدل‌هایی که در OpenRouter پیدا نشدند", None, ["مدل", "منبع تأمین", "توضیح"],
         [[r[0], r[1], no_match_reason(r)] for r in out_rows if not r[8]])
+
+coverage = {}
+for r in out_rows:
+    status = "قیمت رسمی دارد" if (r[14] is not None or r[15] is not None) else (r[18] or "—")
+    coverage[status] = coverage.get(status, 0) + 1
+section("۸. پوشش قیمت رسمی", "برای مدل‌هایی که قیمت رسمی ندارند، علت آمده است.",
+        ["وضعیت", "تعداد مدل"], sorted(coverage.items(), key=lambda kv: -kv[1]))
 
 for i, w in enumerate([42, 16, 16, 16, 16, 16, 16, 16, 16], 1):
     sm.column_dimensions[get_column_letter(i)].width = w
