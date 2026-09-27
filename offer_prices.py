@@ -46,6 +46,7 @@ def maker_of(model):
     return model.lstrip("~").split("/")[0].lower() if "/" in model else None
 
 
+PARTS = ("ورودی", "خروجی", "خواندن کش", "نوشتن کش")
 out_rows = []
 for r in rows:
     model, provider = r[0], r[1]
@@ -83,8 +84,15 @@ for r in rows:
     gap_in = min1[0] / official[0] - 1 if min1[0] is not None and official[0] else None
     gap_out = min1[1] / official[1] - 1 if min1[1] is not None and official[1] else None
 
+    # Components where buying via OpenRouter costs more than the original provider's price.
+    pricier = []
+    if source == "OpenRouter" and any(p is not None for p in min2):
+        pricier = [PARTS[i] for i in range(4)
+                   if min1[i] is not None and min2[i] is not None and min1[i] > min2[i] + EPS]
+
     out_rows.append([model, maker, source] + ours + official + openrouter
-                    + min1 + min2 + [gap_in, gap_out, "; ".join(notes) or None, r[23]])
+                    + min1 + min2 + [gap_in, gap_out, "، ".join(pricier) or None,
+                                     "; ".join(notes) or None, r[23]])
 
 headers = (
     ["مدل", "سازنده", "منبع خرید ما"]
@@ -94,16 +102,20 @@ headers = (
     + [f"حداقل قیمت ۱ (منبع خرید + ۵٪) - {p}" for p in ("ورودی", "خروجی", "خواندن کش", "نوشتن کش")]
     + [f"حداقل قیمت ۲ (پرووایدر اصلی + ۵٪) - {p}" for p in ("ورودی", "خروجی", "خواندن کش", "نوشتن کش")]
     + ["حداقل قیمت ۱ نسبت به پرووایدر اصلی - ورودی", "حداقل قیمت ۱ نسبت به پرووایدر اصلی - خروجی",
-       "توضیح", "منبع قیمت رسمی"]
+       "OpenRouter گران‌تر از پرووایدر اصلی در", "توضیح", "منبع قیمت رسمی"]
 )
 GROUPS = [(1, 3, "404040"), (4, 7, "305496"), (8, 11, "548235"), (12, 15, "7030A0"),
-          (16, 19, "C65911"), (20, 23, "BF8F00"), (24, 27, "404040")]
-WIDTHS = [36, 12, 16] + [11] * 20 + [13, 13, 45, 40]
+          (16, 19, "C65911"), (20, 23, "BF8F00"), (24, 25, "404040"), (26, 26, "674EA7"),
+          (27, 28, "404040")]
+WIDTHS = [36, 12, 16] + [11] * 20 + [13, 13, 22, 45, 40]
+PRICIER_COL = 25
 MONEY_COLS = range(3, 23)
 PCT_COLS = (23, 24)
 MIN1_FILL = PatternFill("solid", fgColor="FCE4D6")
 MIN2_FILL = PatternFill("solid", fgColor="FFF2CC")
 ABOVE_REF = PatternFill("solid", fgColor="FFC7CE")
+PRICIER_ROW = PatternFill("solid", fgColor="D9D2E9")
+PRICIER_CELL = PatternFill("solid", fgColor="B4A7D6")
 
 
 def write_sheet(ws, data, title):
@@ -136,6 +148,12 @@ def write_sheet(ws, data, title):
             row[i].number_format = "0.0%"
             if isinstance(row[i].value, float) and row[i].value > EPS:
                 row[i].fill = ABOVE_REF
+        if row[PRICIER_COL].value:
+            for i in (0, 1, 2, PRICIER_COL):
+                row[i].fill = PRICIER_ROW
+            for i, part in enumerate(PARTS):
+                if part in row[PRICIER_COL].value.split("، "):
+                    row[15 + i].fill = PRICIER_CELL
     ws.freeze_panes = ws.cell(head_row + 1, 2)
     ws.auto_filter.ref = f"A{head_row}:{get_column_letter(len(headers))}{ws.max_row}"
     for i, w in enumerate(WIDTHS, 1):
@@ -144,6 +162,8 @@ def write_sheet(ws, data, title):
     ws.append(["نارنجی: حداقل قیمت بر اساس منبع خرید. زرد: حداقل قیمت بر اساس قیمت پرووایدر اصلی "
                "(فقط وقتی با منبع خرید فرق دارد). قرمز در ستون درصد: حداقل قیمت ما از قیمت پرووایدر "
                "اصلی بالاتر است."])
+    ws.append(["بنفش: خرید از OpenRouter در این جزء‌ها گران‌تر از قیمت پرووایدر اصلی است "
+               "(خانه‌ی پررنگ‌تر همان جزء در حداقل قیمت ۱)."])
 
 
 def order(r):
@@ -159,4 +179,5 @@ write_sheet(wb.create_sheet("همه‌ی مدل‌ها"), sorted(out_rows, key=o
 wb.save(OUT)
 
 two = sum(1 for r in out_rows if r[19] is not None)
+print("OpenRouter pricier:", [(r[0], r[PRICIER_COL]) for r in out_rows if r[PRICIER_COL]])
 print(f"{len(out_rows)} models ({len(customer)} OpenAI/Anthropic); {two} with a second price -> {OUT}")
