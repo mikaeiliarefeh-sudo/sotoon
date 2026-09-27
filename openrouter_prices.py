@@ -326,60 +326,67 @@ new_rows.sort(key=lambda r: (PROVIDERS.index(r[0]), r[13] != "Standard", r[12]))
 
 # --------------------------------------------------------------------- Excel
 
-headers = [
-    "Provider", "Model ID", "Name", "Context (tokens)",
-    "Input $/1M", "Output $/1M", "Cache read $/1M", "Cache write $/1M",
-    "Reasoning $/1M", "Per request $", "Per image $", "Web search $",
-] + OAI_HEADERS
-widths = [11, 42, 42, 14, 12, 12, 14, 14, 14, 13, 12, 12, 26, 11, 12, 14, 14, 12, 22, 50]
-NEW_FILL = PatternFill("solid", fgColor="FFF2CC")
-CMP_FILLS = {"Same": "C6EFCE", "Different": "FFC7CE"}
-all_rows = rows + new_rows
 
-wb = Workbook()
-sheets = [("All", all_rows)] + [
-    (pv, [r for r in all_rows if r[0] == pv]) for pv in PROVIDERS
-]
-titles = {"All": "All", "openai": "OpenAI", "anthropic": "Anthropic",
-          "deepseek": "DeepSeek", "cohere": "Cohere"}
-for i, (key, data) in enumerate(sheets):
-    ws = wb.active if i == 0 else wb.create_sheet()
-    ws.title = titles[key]
-    with_oai = key == "All" or key in OFFICIAL_URLS
-    ncols = len(headers) if with_oai else 12
-    ws.append(headers[:ncols])
-    for r in data:
-        ws.append(r[:ncols])
-    for c in ws[1]:
-        c.font = Font(bold=True, color="FFFFFF")
-        fill = "548235" if c.column > 12 else "305496"
-        c.fill = PatternFill("solid", fgColor=fill)
-        c.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
-    ws.freeze_panes = "C2"
-    ws.auto_filter.ref = ws.dimensions
-    for col, w in enumerate(widths[:ncols], 1):
-        ws.column_dimensions[get_column_letter(col)].width = w
-    for row in ws.iter_rows(min_row=2):
-        row[3].number_format = "#,##0"
-        for c in row[4:12]:
-            c.number_format = "$#,##0.00##"
-        if with_oai:
-            for c in row[14:18]:
+def write_excel():
+
+    headers = [
+        "Provider", "Model ID", "Name", "Context (tokens)",
+        "Input $/1M", "Output $/1M", "Cache read $/1M", "Cache write $/1M",
+        "Reasoning $/1M", "Per request $", "Per image $", "Web search $",
+    ] + OAI_HEADERS
+    widths = [11, 42, 42, 14, 12, 12, 14, 14, 14, 13, 12, 12, 26, 11, 12, 14, 14, 12, 22, 50]
+    NEW_FILL = PatternFill("solid", fgColor="FFF2CC")
+    CMP_FILLS = {"Same": "C6EFCE", "Different": "FFC7CE"}
+    all_rows = rows + new_rows
+
+    wb = Workbook()
+    sheets = [("All", all_rows)] + [
+        (pv, [r for r in all_rows if r[0] == pv]) for pv in PROVIDERS
+    ]
+    titles = {"All": "All", "openai": "OpenAI", "anthropic": "Anthropic",
+              "deepseek": "DeepSeek", "cohere": "Cohere"}
+    for i, (key, data) in enumerate(sheets):
+        ws = wb.active if i == 0 else wb.create_sheet()
+        ws.title = titles[key]
+        with_oai = key == "All" or key in OFFICIAL_URLS
+        ncols = len(headers) if with_oai else 12
+        ws.append(headers[:ncols])
+        for r in data:
+            ws.append(r[:ncols])
+        for c in ws[1]:
+            c.font = Font(bold=True, color="FFFFFF")
+            fill = "548235" if c.column > 12 else "305496"
+            c.fill = PatternFill("solid", fgColor=fill)
+            c.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        ws.freeze_panes = "C2"
+        ws.auto_filter.ref = ws.dimensions
+        for col, w in enumerate(widths[:ncols], 1):
+            ws.column_dimensions[get_column_letter(col)].width = w
+        for row in ws.iter_rows(min_row=2):
+            row[3].number_format = "#,##0"
+            for c in row[4:12]:
                 c.number_format = "$#,##0.00##"
-            status = row[18].value
-            if status and status.startswith("Only on "):
-                for c in row:
-                    c.fill = NEW_FILL
-            elif status in CMP_FILLS:
-                row[18].fill = PatternFill("solid", fgColor=CMP_FILLS[status])
-    ws.append([])
-    ws.append([f"Source: {URL} — fetched {date.today().isoformat()}. Empty = not applicable."])
-    if with_oai:
-        for pv, url in OFFICIAL_URLS.items():
-            if key in ("All", pv):
-                ws.append([f"Green columns ({PROVIDER_TITLES[pv]}): official prices from {url}"])
-        ws.append(["Standard tier, or Batch tier for ':batch' models. "
-                   "Yellow rows: models OpenRouter does not list."])
+            if with_oai:
+                for c in row[14:18]:
+                    c.number_format = "$#,##0.00##"
+                status = row[18].value
+                if status and status.startswith("Only on "):
+                    for c in row:
+                        c.fill = NEW_FILL
+                elif status in CMP_FILLS:
+                    row[18].fill = PatternFill("solid", fgColor=CMP_FILLS[status])
+        ws.append([])
+        ws.append([f"Source: {URL} — fetched {date.today().isoformat()}. Empty = not applicable."])
+        if with_oai:
+            for pv, url in OFFICIAL_URLS.items():
+                if key in ("All", pv):
+                    ws.append([f"Green columns ({PROVIDER_TITLES[pv]}): official prices from {url}"])
+            ws.append(["Standard tier, or Batch tier for ':batch' models. "
+                       "Yellow rows: models OpenRouter does not list."])
 
-wb.save(OUT)
-print(f"{len(rows)} OpenRouter models + {len(new_rows)} official-only rows -> {OUT}")
+    wb.save(OUT)
+    print(f"{len(rows)} OpenRouter models + {len(new_rows)} official-only rows -> {OUT}")
+
+
+if __name__ == "__main__":
+    write_excel()
