@@ -83,11 +83,12 @@ for r in rows:
     gap_in = min1[0] / official[0] - 1 if min1[0] is not None and official[0] else None
     gap_out = min1[1] / official[1] - 1 if min1[1] is not None and official[1] else None
 
-    out_rows.append([model, maker, source] + ours[:2] + official + openrouter
+    out_rows.append([model, maker, source] + ours + official + openrouter
                     + min1 + min2 + [gap_in, gap_out, "; ".join(notes) or None, r[23]])
 
 headers = (
-    ["مدل", "سازنده", "منبع خرید ما", "قیمت فعلی ما - ورودی", "قیمت فعلی ما - خروجی"]
+    ["مدل", "سازنده", "منبع خرید ما"]
+    + [f"قیمت فعلی ما - {p}" for p in ("ورودی", "خروجی", "خواندن کش", "نوشتن کش")]
     + [f"پرووایدر اصلی - {p}" for p in ("ورودی", "خروجی", "خواندن کش", "نوشتن کش")]
     + [f"OpenRouter - {p}" for p in ("ورودی", "خروجی", "خواندن کش", "نوشتن کش")]
     + [f"حداقل قیمت ۱ (منبع خرید + ۵٪) - {p}" for p in ("ورودی", "خروجی", "خواندن کش", "نوشتن کش")]
@@ -95,11 +96,11 @@ headers = (
     + ["حداقل قیمت ۱ نسبت به پرووایدر اصلی - ورودی", "حداقل قیمت ۱ نسبت به پرووایدر اصلی - خروجی",
        "توضیح", "منبع قیمت رسمی"]
 )
-GROUPS = [(1, 3, "404040"), (4, 5, "305496"), (6, 9, "548235"), (10, 13, "7030A0"),
-          (14, 17, "C65911"), (18, 21, "BF8F00"), (22, 23, "404040"), (24, 25, "404040")]
-WIDTHS = [36, 12, 16, 11, 11] + [11] * 16 + [13, 13, 45, 40]
-MONEY_COLS = range(3, 21)
-PCT_COLS = (21, 22)
+GROUPS = [(1, 3, "404040"), (4, 7, "305496"), (8, 11, "548235"), (12, 15, "7030A0"),
+          (16, 19, "C65911"), (20, 23, "BF8F00"), (24, 27, "404040")]
+WIDTHS = [36, 12, 16] + [11] * 20 + [13, 13, 45, 40]
+MONEY_COLS = range(3, 23)
+PCT_COLS = (23, 24)
 MIN1_FILL = PatternFill("solid", fgColor="FCE4D6")
 MIN2_FILL = PatternFill("solid", fgColor="FFF2CC")
 ABOVE_REF = PatternFill("solid", fgColor="FFC7CE")
@@ -125,10 +126,10 @@ def write_sheet(ws, data, title):
         row = ws[ws.max_row]
         for i in MONEY_COLS:
             row[i].number_format = "$#,##0.00####"
-        for i in range(13, 17):
+        for i in range(15, 19):
             if row[i].value is not None:
                 row[i].fill = MIN1_FILL
-        for i in range(17, 21):
+        for i in range(19, 23):
             if row[i].value is not None:
                 row[i].fill = MIN2_FILL
         for i in PCT_COLS:
@@ -157,5 +158,5 @@ write_sheet(wb.create_sheet("همه‌ی مدل‌ها"), sorted(out_rows, key=o
             "قیمت پیشنهادی - همه‌ی مدل‌ها")
 wb.save(OUT)
 
-two = sum(1 for r in out_rows if r[17] is not None)
+two = sum(1 for r in out_rows if r[19] is not None)
 print(f"{len(out_rows)} models ({len(customer)} OpenAI/Anthropic); {two} with a second price -> {OUT}")
