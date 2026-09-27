@@ -134,6 +134,141 @@ for pv, url in op.OFFICIAL_URLS.items():
     ws.append([f"Official ({op.PROVIDER_TITLES[pv]}): {url}"])
 ws.append(["Markup = Sotoon price / other price - 1. Red = Sotoon is cheaper than that source."])
 
+# ------------------------------------------------------------ Summary sheet
+# Row indexes into out_rows: 0 model, 1 provider, 4/5 Sotoon in/out,
+# 8 OpenRouter ID, 9/10 OpenRouter in/out, 13 official model, 14/15 official
+# in/out, 19-22 markups (OpenRouter in/out, official in/out).
+
+EPS = 0.001
+TYPICAL = {"openrouter": 0.15, "anthropic": 0.15, "openai": 0.3225}  # 1.15, 1.15 x 1.15
+
+sm = wb.create_sheet("خلاصه", 0)
+sm.sheet_view.rightToLeft = True
+TITLE_FONT = Font(bold=True, size=13, color="1F3864")
+HEAD_FILL = PatternFill("solid", fgColor="305496")
+
+
+def section(title, note, head, data, pct_cols=(), money_cols=()):
+    sm.append([title])
+    sm.cell(sm.max_row, 1).font = TITLE_FONT
+    if note:
+        sm.append([note])
+        sm.cell(sm.max_row, 1).font = Font(italic=True, color="595959")
+    sm.append(head)
+    for c in sm[sm.max_row]:
+        c.font = Font(bold=True, color="FFFFFF")
+        c.fill = HEAD_FILL
+        c.alignment = Alignment(horizontal="center", wrap_text=True)
+    if not data:
+        sm.append(["—  موردی پیدا نشد"])
+    for d in data:
+        sm.append(list(d))
+        row = sm[sm.max_row]
+        for i in pct_cols:
+            row[i].number_format = "0.0%"
+            if isinstance(row[i].value, (int, float)) and row[i].value < -EPS:
+                row[i].fill = BELOW_COST
+        for i in money_cols:
+            row[i].number_format = "$#,##0.00##"
+    sm.append([])
+    sm.append([])
+
+
+def median(xs):
+    xs = sorted(xs)
+    n = len(xs)
+    return (xs[n // 2] + xs[(n - 1) // 2]) / 2 if n else None
+
+
+# 1. Markup pattern per source.
+pattern = []
+for pv in sorted({r[1] for r in out_rows}):
+    rs = [r for r in out_rows if r[1] == pv]
+    mk_or = [r[19] for r in rs if r[19] is not None]
+    mk_off = [r[21] for r in rs if r[21] is not None]
+    pattern.append([pv, len(rs), len(mk_or), median(mk_or),
+                    min(mk_or) if mk_or else None, max(mk_or) if mk_or else None,
+                    len(mk_off), median(mk_off)])
+section("۱. الگوی مارک‌آپ بر اساس منبع تأمین",
+        "مارک‌آپ ورودی. میانه = مقدار معمول.",
+        ["منبع (provider)", "تعداد مدل", "با قیمت OpenRouter", "میانه‌ی مارک‌آپ نسبت به OpenRouter",
+         "کمترین", "بیشترین", "با قیمت رسمی", "میانه‌ی مارک‌آپ نسبت به قیمت رسمی"],
+        pattern, pct_cols=(3, 4, 5, 7))
+
+# 2. Priced below a source.
+below = []
+for r in out_rows:
+    if r[19] is not None and (r[19] < -EPS or r[20] < -EPS):
+        below.append([r[0], r[1], "OpenRouter", r[4], r[5], r[9], r[10], r[19], r[20]])
+    if r[21] is not None and (r[21] < -EPS or (r[22] is not None and r[22] < -EPS)):
+        below.append([r[0], r[1], "رسمی", r[4], r[5], r[14], r[15], r[21], r[22]])
+section("۲. مدل‌هایی که قیمت ما پایین‌تر از منبع است",
+        "برای DeepSeek، قیمت رسمی نرخ ساعت شلوغ (peak) است.",
+        ["مدل", "منبع تأمین", "مقایسه با", "ورودی ما", "خروجی ما", "ورودی منبع", "خروجی منبع",
+         "مارک‌آپ ورودی", "مارک‌آپ خروجی"],
+        below, pct_cols=(7, 8), money_cols=(3, 4, 5, 6))
+
+# 3. Sold at cost (no markup).
+zero = []
+for r in out_rows:
+    for label, a, b in (("OpenRouter", 19, 20), ("رسمی", 21, 22)):
+        if r[a] is not None and abs(r[a]) < EPS and (r[b] is None or abs(r[b]) < EPS):
+            zero.append([r[0], r[1], label, r[4], r[5]])
+            break
+section("۳. مدل‌هایی که بدون مارک‌آپ فروخته می‌شوند",
+        None, ["مدل", "منبع تأمین", "برابر با قیمت", "ورودی", "خروجی"],
+        zero, money_cols=(3, 4))
+
+# 4. "latest" aliases whose markup is off the usual rate.
+stale = []
+for r in out_rows:
+    if r[0].startswith("~") and r[19] is not None:
+        usual = TYPICAL.get(r[1], 0.15)
+        if abs(r[19] - usual) > 0.01 or abs(r[20] - usual) > 0.01:
+            stale.append([r[0], r[4], r[5], r[9], r[10], r[19], r[20]])
+section("۴. مدل‌های «latest» با مارک‌آپ غیرعادی (احتمالاً قیمت کهنه)",
+        "این شناسه‌ها همیشه به جدیدترین نسخه اشاره می‌کنند؛ اگر نسخه عوض شده، قیمت ما به‌روز نشده است.",
+        ["مدل", "ورودی ما", "خروجی ما", "ورودی OpenRouter", "خروجی OpenRouter",
+         "مارک‌آپ ورودی", "مارک‌آپ خروجی"],
+        stale, pct_cols=(5, 6), money_cols=(1, 2, 3, 4))
+
+# 5. Other rows off the usual markup (not aliases, not below cost, not zero).
+flagged = {r[0] for r in below} | {r[0] for r in zero} | {r[0] for r in stale}
+odd = []
+for r in out_rows:
+    if r[0] in flagged or r[19] is None:
+        continue
+    usual = TYPICAL.get(r[1])
+    if usual is not None and (abs(r[19] - usual) > 0.01 or abs(r[20] - usual) > 0.01):
+        odd.append([r[0], r[1], r[4], r[5], r[9], r[10], r[19], r[20]])
+section("۵. سایر مدل‌ها با مارک‌آپ متفاوت از الگوی معمول",
+        "الگوی معمول: ۱۵٪ برای OpenRouter و Anthropic، ۳۲٫۲٪ برای OpenAI.",
+        ["مدل", "منبع تأمین", "ورودی ما", "خروجی ما", "ورودی OpenRouter", "خروجی OpenRouter",
+         "مارک‌آپ ورودی", "مارک‌آپ خروجی"],
+        odd, pct_cols=(6, 7), money_cols=(2, 3, 4, 5))
+
+# 6. Duplicates and rows with no OpenRouter match.
+counts = {}
+for r in out_rows:
+    counts[r[0]] = counts.get(r[0], 0) + 1
+section("۶. ردیف‌های تکراری در لیست ما", None, ["مدل", "تعداد تکرار"],
+        [[m, n] for m, n in counts.items() if n > 1])
+
+
+def no_match_reason(r):
+    if r[1] == "hosted_vllm":
+        return "میزبانی خودمان (hosted_vllm)"
+    if r[13]:
+        return "در OpenRouter نیست، ولی قیمت رسمی دارد"
+    return "در فهرست مدل‌های OpenRouter پیدا نشد"
+
+
+section("۷. مدل‌هایی که در OpenRouter پیدا نشدند", None, ["مدل", "منبع تأمین", "توضیح"],
+        [[r[0], r[1], no_match_reason(r)] for r in out_rows if not r[8]])
+
+for i, w in enumerate([42, 16, 16, 16, 16, 16, 16, 16, 16], 1):
+    sm.column_dimensions[get_column_letter(i)].width = w
+
 wb.save(OUT)
 n_or = sum(1 for r in out_rows if r[8])
 n_off = sum(1 for r in out_rows if r[13])
