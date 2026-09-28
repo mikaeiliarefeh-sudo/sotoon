@@ -10,7 +10,9 @@ import json
 import re
 import sys
 import time
+import urllib.parse
 import urllib.request
+from concurrent.futures import ThreadPoolExecutor
 from datetime import date
 
 from openpyxl import Workbook
@@ -71,13 +73,73 @@ def fetch(url, attempts=4):
 
 # ---------------------------------------------------------------- OpenRouter
 
+# A model is often served by several providers at different prices. The price
+# we use is the one each model's page on openrouter.ai shows (the "In / Out
+# Price" box; its FAQ also lists cache prices), not the models API default.
+
 models = json.loads(fetch(URL))["data"]
+api_models = {m["id"]: m for m in models}
+_page_cache = {}
+PAGE_PRICE = re.compile(r"costs \$([\d.,]+)/M input tokens and \$([\d.,]+)/M output tokens"
+                        r"(?:, with separate rates for ([^<]*?tokens)\.)?")
+
+
+def page_pricing(model_id):
+    """Prices ($ per token, as strings like the API) from the model's openrouter.ai page.
+
+    Returns None when the page shows no price (e.g. the model was removed).
+    """
+    if model_id in _page_cache:
+        return _page_cache[model_id]
+    result = None
+    try:
+        page = fetch(f"https://openrouter.ai/{urllib.parse.quote(model_id, safe='/:~')}")
+    except OSError:
+        page = ""
+    text = html.unescape(re.sub(r"<[^>]+>", "", page))
+    m = PAGE_PRICE.search(text)
+    if m:
+        def per_token(v):
+            return str(float(v.replace(",", "")) / 1_000_000)
+
+        result = {"prompt": per_token(m.group(1)), "completion": per_token(m.group(2))}
+        extra = m.group(3) or ""
+        for key, label in (("input_cache_read", r"Cache Read"),
+                           ("input_cache_write", r"Cache Write"),
+                           ("input_cache_write_1h", r"Cache Write \(1h\)")):
+            mm = re.search(label + r" at \$([\d.,]+)/M", extra)
+            if mm:
+                result[key] = per_token(mm.group(1))
+    _page_cache[model_id] = result
+    return result
+
+
+def prefetch_pages(model_ids):
+    todo = [i for i in dict.fromkeys(model_ids) if i and i not in _page_cache]
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        list(pool.map(page_pricing, todo))
+
+
+def effective_pricing(model_id):
+    """(pricing, source): source is "page", "api" (listed, but the page shows no
+    price) or None (not on OpenRouter any more)."""
+    api = api_models.get(model_id, {}).get("pricing", {})
+    p = page_pricing(model_id)
+    if p is None:
+        return (api, "api") if model_id in api_models else (None, None)
+    # Keep non-token prices (request, image, web search) from the models API.
+    return {**{k: v for k, v in api.items()
+               if k not in ("prompt", "completion", "input_cache_read", "input_cache_write")},
+            **p}, "page"
+
+
+prefetch_pages([m["id"] for m in models if m["id"].split("/")[0] in PROVIDERS])
 rows = []
 for m in models:
     provider = m["id"].split("/")[0]
     if provider not in PROVIDERS:
         continue
-    p = m.get("pricing", {})
+    p, _ = effective_pricing(m["id"])
     rows.append([
         provider,
         m["id"],
@@ -383,7 +445,8 @@ def write_excel():
                 elif status in CMP_FILLS:
                     row[18].fill = PatternFill("solid", fgColor=CMP_FILLS[status])
         ws.append([])
-        ws.append([f"Source: {URL} — fetched {date.today().isoformat()}. Empty = not applicable."])
+        ws.append([f"Source: each model's page on openrouter.ai (In / Out Price), fetched "
+                   f"{date.today().isoformat()}. Empty = not applicable."])
         if with_oai:
             for pv, url in OFFICIAL_URLS.items():
                 if key in ("All", pv):

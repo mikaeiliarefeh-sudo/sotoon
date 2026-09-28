@@ -92,7 +92,7 @@ for r in rows:
 
     out_rows.append([model, maker, source] + ours + official + openrouter
                     + min1 + min2 + [gap_in, gap_out, "، ".join(pricier) or None,
-                                     "; ".join(notes) or None, r[23]])
+                                     "; ".join(notes) or None, r[23], r[24], r[25], r[26]])
 
 headers = (
     ["مدل", "سازنده", "منبع خرید ما"]
@@ -102,12 +102,14 @@ headers = (
     + [f"حداقل قیمت ۱ (منبع خرید + ۵٪) - {p}" for p in ("ورودی", "خروجی", "خواندن کش", "نوشتن کش")]
     + [f"حداقل قیمت ۲ (پرووایدر اصلی + ۵٪) - {p}" for p in ("ورودی", "خروجی", "خواندن کش", "نوشتن کش")]
     + ["حداقل قیمت ۱ نسبت به پرووایدر اصلی - ورودی", "حداقل قیمت ۱ نسبت به پرووایدر اصلی - خروجی",
-       "OpenRouter گران‌تر از پرووایدر اصلی در", "توضیح", "منبع قیمت رسمی"]
+       "OpenRouter گران‌تر از پرووایدر اصلی در", "توضیح", "منبع قیمت رسمی",
+       "وضعیت در دسترس بودن", "منسوخ/حذف‌شده؟", "تاریخ حذف از OpenRouter"]
 )
 GROUPS = [(1, 3, "404040"), (4, 7, "305496"), (8, 11, "548235"), (12, 15, "7030A0"),
           (16, 19, "C65911"), (20, 23, "BF8F00"), (24, 25, "404040"), (26, 26, "674EA7"),
-          (27, 28, "404040")]
-WIDTHS = [36, 12, 16] + [11] * 20 + [13, 13, 22, 45, 40]
+          (27, 28, "404040"), (29, 31, "7F7F7F")]
+WIDTHS = [36, 12, 16] + [11] * 20 + [13, 13, 22, 45, 40, 40, 12, 14]
+DEPRECATED_COL = 29
 PRICIER_COL = 25
 MONEY_COLS = range(3, 23)
 PCT_COLS = (23, 24)
@@ -116,6 +118,8 @@ MIN2_FILL = PatternFill("solid", fgColor="FFF2CC")
 ABOVE_REF = PatternFill("solid", fgColor="FFC7CE")
 PRICIER_ROW = PatternFill("solid", fgColor="D9D2E9")
 PRICIER_CELL = PatternFill("solid", fgColor="B4A7D6")
+DEPRECATED = PatternFill("solid", fgColor="BFBFBF")
+MAYBE_DEPRECATED = PatternFill("solid", fgColor="EDEDED")
 
 
 def write_sheet(ws, data, title):
@@ -154,6 +158,10 @@ def write_sheet(ws, data, title):
             for i, part in enumerate(PARTS):
                 if part in row[PRICIER_COL].value.split("، "):
                     row[15 + i].fill = PRICIER_CELL
+        if row[DEPRECATED_COL].value in ("بله", "شاید"):
+            fill = DEPRECATED if row[DEPRECATED_COL].value == "بله" else MAYBE_DEPRECATED
+            for i in (0, DEPRECATED_COL - 1, DEPRECATED_COL):
+                row[i].fill = fill
     ws.freeze_panes = ws.cell(head_row + 1, 2)
     ws.auto_filter.ref = f"A{head_row}:{get_column_letter(len(headers))}{ws.max_row}"
     for i, w in enumerate(WIDTHS, 1):
@@ -164,6 +172,9 @@ def write_sheet(ws, data, title):
                "اصلی بالاتر است."])
     ws.append(["بنفش: خرید از OpenRouter در این جزء‌ها گران‌تر از قیمت پرووایدر اصلی است "
                "(خانه‌ی پررنگ‌تر همان جزء در حداقل قیمت ۱)."])
+    ws.append(["خاکستری تیره: منسوخ یا حذف‌شده (از OpenRouter حذف شده یا حذفش زمان‌بندی شده، یا پرووایدر "
+               "اصلی بازنشسته‌اش کرده). خاکستری روشن: در صفحه‌ی قیمت پرووایدر اصلی نیست (شاید منسوخ)."])
+    ws.append(["قیمت OpenRouter همان قیمتی است که در صفحه‌ی هر مدل در openrouter.ai نمایش داده می‌شود."])
 
 
 def order(r):

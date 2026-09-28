@@ -26,7 +26,35 @@ OUT = sys.argv[2] if len(sys.argv) > 2 else "sotoon_price_comparison.xlsx"
 
 EXTRA_CSV = os.path.join(os.path.dirname(os.path.abspath(__file__)), "official_prices_extra.csv")
 
-or_prices = {m["id"]: m.get("pricing", {}) for m in op.models}
+
+
+def availability(or_id, provider, or_source, off):
+    """(status labels, deprecated) for a Sotoon row; deprecated is "بله" (confirmed:
+    removed or scheduled for removal on OpenRouter, or retired by the maker), "شاید"
+    (not on the maker's pricing page, which can also mean it was never sold there)
+    or None."""
+    if provider == "hosted_vllm":
+        return "میزبانی خودمان", None
+    labels, level = [], None
+    bought_direct = provider in ("openai", "anthropic") and off and off[0] is not None
+    if or_id and or_source is None and not bought_direct:
+        labels.append("حذف‌شده از OpenRouter")
+        level = "بله"
+    elif or_source == "api":
+        labels.append("قیمت در صفحه‌ی OpenRouter نیامده؛ قیمت API استفاده شد")
+    expires = op.api_models.get(or_id, {}).get("expiration_date") if or_id else None
+    if expires:
+        labels.append(f"حذف از OpenRouter در {expires}")
+        level = "بله"
+    note = (off[5] if off else None) or ""
+    if re.search(r"retired|deprecated", note, re.I):
+        labels.append("بازنشسته/منسوخ نزد پرووایدر اصلی")
+        level = "بله"
+    elif (not off or off[0] is None) and note.startswith("Not listed on"):
+        labels.append("در صفحه‌ی قیمت پرووایدر اصلی نیست")
+        level = level or "شاید"
+    return " | ".join(labels) or None, level
+
 
 
 def num_or_none(v):
@@ -112,17 +140,20 @@ headers = [
     # Markups
     "Markup vs OpenRouter (input)", "Markup vs OpenRouter (output)",
     "Markup vs Official (input)", "Markup vs Official (output)",
-    "Official source",
+    "Official source", "وضعیت در دسترس بودن", "منسوخ/حذف‌شده؟", "تاریخ حذف از OpenRouter",
 ]
-GROUPS = [(1, 8, "305496"), (9, 13, "7030A0"), (14, 19, "548235"), (20, 23, "C65911"), (24, 24, "548235")]
-widths = [40, 12, 42, 11, 12, 12, 13, 13, 40, 12, 12, 13, 13, 24, 12, 12, 13, 13, 50, 14, 14, 14, 14, 50]
+GROUPS = [(1, 8, "305496"), (9, 13, "7030A0"), (14, 19, "548235"), (20, 23, "C65911"), (24, 24, "548235"), (25, 27, "7F7F7F")]
+widths = [40, 12, 42, 11, 12, 12, 13, 13, 40, 12, 12, 13, 13, 24, 12, 12, 13, 13, 50, 14, 14, 14, 14, 50, 45, 12, 14]
+
+op.prefetch_pages([openrouter_id(r[col["model_name"]], r[col["provider"]],
+                                r[col["underlying_model"]] or "") for r in src_rows])
 
 out_rows = []
 for r in src_rows:
     name, provider, underlying = r[col["model_name"]], r[col["provider"]], r[col["underlying_model"]] or ""
     ours = [r[col[k]] for k in ("input $/1M", "output $/1M", "cache_read $/1M", "cache_write $/1M")]
     or_id = openrouter_id(name, provider, underlying)
-    p = or_prices.get(or_id) if or_id else None
+    p, or_source = op.effective_pricing(or_id) if or_id else (None, None)
     if p:
         theirs = [op.per_million(p.get(k)) for k in
                   ("prompt", "completion", "input_cache_read", "input_cache_write")]
@@ -141,6 +172,8 @@ for r in src_rows:
         + [markup(ours[0], theirs[0]), markup(ours[1], theirs[1]),
            markup(ours[0], official[1]), markup(ours[1], official[2])]
         + [o_source]
+        + list(availability(or_id, provider, or_source, off))
+        + [op.api_models.get(or_id, {}).get("expiration_date") if or_id else None]
     )
 
 wb = Workbook()
@@ -160,6 +193,8 @@ ws.auto_filter.ref = ws.dimensions
 for i, w in enumerate(widths, 1):
     ws.column_dimensions[get_column_letter(i)].width = w
 BELOW_COST = PatternFill("solid", fgColor="FFC7CE")
+DEPRECATED = PatternFill("solid", fgColor="BFBFBF")
+MAYBE_DEPRECATED = PatternFill("solid", fgColor="EDEDED")
 for row in ws.iter_rows(min_row=2):
     for c in row[4:8] + row[9:13] + row[14:18]:
         c.number_format = "$#,##0.00##"
@@ -167,14 +202,19 @@ for row in ws.iter_rows(min_row=2):
         c.number_format = "0.0%"
         if isinstance(c.value, (int, float)) and c.value < -1e-9:
             c.fill = BELOW_COST
+    if len(row) > 25 and row[25].value in ("بله", "شاید"):
+        for c in (row[0], row[24], row[25]):
+            c.fill = DEPRECATED if row[25].value == "بله" else MAYBE_DEPRECATED
 ws.append([])
 ws.append([f"Base: Sotoon price list ({SRC.rsplit('/', 1)[-1]}). "
-           f"OpenRouter: {op.URL}, fetched {date.today().isoformat()}."])
+           f"OpenRouter: price on each model's page on openrouter.ai, fetched {date.today().isoformat()}."])
 for pv, url in op.OFFICIAL_URLS.items():
     ws.append([f"Official ({op.PROVIDER_TITLES[pv]}): {url}"])
 ws.append(["Other makers: official_prices_extra.csv (read 2026-09-27); "
            "each row's page is in the 'Official source' column."])
 ws.append(["Markup = Sotoon price / other price - 1. Red = Sotoon is cheaper than that source."])
+ws.append(["منسوخ/حذف‌شده: «بله» (خاکستری تیره) = از OpenRouter حذف شده یا حذفش زمان‌بندی شده، یا پرووایدر "
+           "اصلی بازنشسته‌اش کرده. «شاید» (خاکستری روشن) = در صفحه‌ی قیمت پرووایدر اصلی نیست."])
 
 # ------------------------------------------------------------ Summary sheet
 # Row indexes into out_rows: 0 model, 1 provider, 4/5 Sotoon in/out,
