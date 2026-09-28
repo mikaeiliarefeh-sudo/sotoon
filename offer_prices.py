@@ -48,6 +48,7 @@ def maker_of(model):
 
 PARTS = ("ورودی", "خروجی", "خواندن کش", "نوشتن کش")
 out_rows = []
+dropped = []
 for r in rows:
     model, provider = r[0], r[1]
     maker = maker_of(model) or provider
@@ -58,24 +59,27 @@ for r in rows:
     has_off = any(p is not None for p in official[:2])
     notes = []
 
+    # Reference cost: the source we buy from; if OpenRouter doesn't offer the
+    # model, the original provider's price; if neither does, drop the model.
     if provider in DIRECT and has_off:
         source, cost = f"{provider} (direct)", official
     elif has_or:
         source, cost = "OpenRouter", openrouter
+        if provider == "hosted_vllm":
+            source = "OpenRouter (مرجع؛ میزبانی خودمان)"
         if provider in DIRECT:
             notes.append(f"No official {provider} price; OpenRouter price used")
-    elif provider == "hosted_vllm":
-        source, cost = "Self-hosted", [None] * 4
-        notes.append("Self-hosted: cost is infrastructure, not per-token")
+    elif has_off:
+        source, cost = "پرووایدر اصلی (در OpenRouter نیست)", official
     else:
-        source, cost = "—", [None] * 4
-        notes.append("Not available on OpenRouter; no purchase price")
+        reason = ("Self-hosted by Sotoon" if provider == "hosted_vllm"
+                  else "Neither OpenRouter nor the original provider offers it")
+        dropped.append([model, maker, provider] + ours + [reason, r[24], r[25]])
+        continue
 
     min1 = with_fee(cost)
     min2 = [None] * 4
-    if has_off and any(p is not None for p in cost[:2]) and not same(cost, official):
-        min2 = with_fee(official)
-    elif has_off and not any(p is not None for p in cost[:2]):
+    if has_off and cost is not official and not same(cost, official):
         min2 = with_fee(official)
     if not has_off:
         notes.append(r[18] or "No official price")
@@ -86,7 +90,7 @@ for r in rows:
 
     # Components where buying via OpenRouter costs more than the original provider's price.
     pricier = []
-    if source == "OpenRouter" and any(p is not None for p in min2):
+    if source.startswith("OpenRouter") and any(p is not None for p in min2):
         pricier = [PARTS[i] for i in range(4)
                    if min1[i] is not None and min2[i] is not None and min1[i] > min2[i] + EPS]
 
@@ -187,8 +191,27 @@ write_sheet(wb.active, customer, "قیمت پیشنهادی - مدل‌های Op
 wb.active.title = "OpenAI و Anthropic"
 write_sheet(wb.create_sheet("همه‌ی مدل‌ها"), sorted(out_rows, key=order),
             "قیمت پیشنهادی - همه‌ی مدل‌ها")
+ws = wb.create_sheet("حذف‌شده از لیست")
+ws.sheet_view.rightToLeft = True
+ws.append(["مدل‌هایی که نه در OpenRouter هستند و نه نزد پرووایدر اصلی؛ از لیست پیشنهاد قیمت حذف شدند."])
+ws.cell(1, 1).font = Font(bold=True, size=13, color="1F3864")
+ws.append([])
+ws.append(["مدل", "سازنده", "منبع فعلی ما", "قیمت فعلی ما - ورودی", "قیمت فعلی ما - خروجی",
+           "قیمت فعلی ما - خواندن کش", "قیمت فعلی ما - نوشتن کش", "علت", "وضعیت در دسترس بودن",
+           "منسوخ/حذف‌شده؟"])
+for c in ws[ws.max_row]:
+    c.font = Font(bold=True, color="FFFFFF")
+    c.fill = PatternFill("solid", fgColor="7F7F7F")
+    c.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+for d in sorted(dropped, key=order):
+    ws.append(d)
+    for c in ws[ws.max_row][3:7]:
+        c.number_format = "$#,##0.00####"
+for i, w in enumerate([40, 14, 14, 12, 12, 12, 12, 45, 45, 12], 1):
+    ws.column_dimensions[get_column_letter(i)].width = w
 wb.save(OUT)
 
 two = sum(1 for r in out_rows if r[19] is not None)
 print("OpenRouter pricier:", [(r[0], r[PRICIER_COL]) for r in out_rows if r[PRICIER_COL]])
-print(f"{len(out_rows)} models ({len(customer)} OpenAI/Anthropic); {two} with a second price -> {OUT}")
+print(f"{len(out_rows)} models ({len(customer)} OpenAI/Anthropic); {two} with a second price; "
+      f"{len(dropped)} dropped -> {OUT}")

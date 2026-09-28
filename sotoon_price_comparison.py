@@ -71,12 +71,20 @@ with open(EXTRA_CSV, newline="") as f:
             r["note"] or None, r["source"] or None))
 
 
+HOSTED_ALIASES = {"google/gemma3-27b": "google/gemma-3-27b-it"}
+
+
 def openrouter_id(model_name, provider, underlying):
     """Best-guess OpenRouter model ID for a Sotoon row."""
     if provider == "openrouter":
         return underlying.removeprefix("openrouter/")
     if provider == "hosted_vllm":
-        return None  # self-hosted; no OpenRouter equivalent to compare
+        # Self-hosted; compare with the same model on OpenRouter where there is one.
+        name = model_name.lower()
+        for candidate in (HOSTED_ALIASES.get(name), name, name.removesuffix("-fp8")):
+            if candidate in op.api_models:
+                return candidate
+        return None
     name = model_name if "/" in model_name else f"{provider}/{model_name}"
     if provider == "anthropic":
         name = re.sub(r"(\d)-(\d)", r"\1.\2", name)  # claude-haiku-4-5 -> 4.5
