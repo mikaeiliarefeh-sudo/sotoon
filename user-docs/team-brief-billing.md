@@ -1,0 +1,25 @@
+# جمع‌بندی تست قیمت و صورت‌حساب
+
+محدوده: فقط `anthropic/claude-opus-4.6` از مسیر OpenRouter تست شده؛ مدل‌های دیگر و OpenAI مستقیم هنوز نه.
+
+## آنچه درست کار می‌کند
+- هزینه‌ی cache درست است (خواندن ≈۹۰٪ ارزان‌تر، نوشتن ≈۲۵٪ گران‌تر) و با ستون Cache Usage اوپن‌روتر می‌خواند.
+- مبلغ ثبت‌شده در LiteLLM در ۱۰ درخواست تست با هزینه‌ی OpenRouter برابر است؛ پنل مشتری از لاگ LiteLLM می‌خواند.
+- `/v1/chat/completions` و `/v1/messages` مبلغ یکسان ثبت می‌کنند.
+
+## مشکلات
+1. **P0 مارجین ۱۵٪ اعمال نمی‌شود.** قیمت صفحه‌ی مدل‌ها ۵.۷۵/۲۸.۷۵؛ مبلغ کسرشده = قیمت پایه ۵/۲۵. ۹٬۰۱۶+۵ توکن: ۰.۰۵۱۹۸۶ (قیمت صفحه) در برابر ۰.۰۴۵۲۰۵ (ثبت‌شده = OpenRouter). ۵۴٬۰۱۶+۵ توکن: ۰.۳۱۰۷۳۶ در برابر ۰.۲۷۰۲۰۵. مشتری ≈۱۳٪ کمتر می‌پردازد. قیمت cache در تعریف مدل هم بدون مارجین است (۰.۵ و ۶.۲۵). علت محتمل (تأییدنشده): LiteLLM `usage.cost` اوپن‌روتر را ثبت می‌کند؛ شاید تنظیم مارجین LiteLLM (`x-litellm-response-cost-margin-percent`، فعلاً ۰) راه‌حل باشد. بقیه‌ی مدل‌های OpenRouter هم چک شوند. اصلاح ≈۱۵٪ هزینه‌ی مشتریان را بالا می‌برد ← تصمیم محصول/مالی.
+2. **P1 پنل توکن را تفکیک نمی‌کند** (ورودی + cache + خروجی یک عدد). احتمالاً منشأ شکایت پاتوق (حدس؛ از پاتوق پرسیده شود). از `prompt_tokens_details.cached_tokens` / `cache_write_tokens` خوانده شود، نه فیلدهای صفحه‌ی جزئیات LiteLLM (آنجا Cache Read = 0).
+3. **P1 قیمت cache در صفحه‌ی مدل‌ها نیست.**
+4. **P2 هدر `x-litellm-response-cost-original` در `/v1/messages` گمراه‌کننده است** (۰.۰۷۸ در برابر ۰.۰۸۴۹/۰.۰۰۷۲ واقعی).
+
+## مشکلات دیگر
+- P0: Claude Code با مدل‌های OpenAI مستقیم `400 Unknown parameter: 'output_config'` (احتمالاً `additional_drop_params`).
+- P1: تولید تصویر (Gemini image) خطای سرور؛ نشت اطلاعات (stack trace، `llm_provider-*`، `x-litellm-model-api-base`، نسخه‌ی LiteLLM، `x-litellm-key-spend`)؛ rate limit/۴۲۹ و متن دقیق خطای «بودجه تمام شد» تست نشده.
+- P2: cold start تا ۱۳ ثانیه.
+
+## تست‌نشده
+OpenAI مستقیم (`gpt-5-nano`)، یک مدل ارزان OpenRouter، `/v1/responses`، `/v1/messages` با streaming/tool use، OpenCode، Codex، Cursor.
+
+## تصمیم حقوقی/محصول
+Claude Code با مدل‌های غیر Claude و محدودیت «کشورهای پشتیبانی‌شده‌ی Anthropic».
