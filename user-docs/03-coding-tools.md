@@ -1,9 +1,9 @@
 # اتصال ابزارهای کدنویسی
 
 > ⚠️ **یادداشت داخلی (قبل از انتشار حذف شود):** وضعیت هر بخش:
-> - **VS Code:** از راهنمای قبلی که تست شده و کار کرده.
-> - **Claude Code:** از راهنمای قبلی؛ اسلش پایانی آدرس و مدل سبک باید تست شود.
-> - **OpenCode و Codex:** از مستندات رسمی آن‌ها؛ تست نشده.
+> - **VS Code (Copilot):** از راهنمای قبلی که تست شده و کار کرده.
+> - **Claude Code:** اتصال، آدرس بدون اسلش، متغیرهای لازم و خطای مدل‌های OpenAI روی افزونه‌ی VS Code تست شده. جواب‌دادن یک مدل غیر OpenAI **تا انتها (چت + ابزار) هنوز تست نشده**. روش ترمینال و دسکتاپ از مستند رسمی است.
+> - **OpenCode و Codex:** از مستندات رسمی؛ تست نشده.
 > - **Cursor:** از راهنمای‌های عمومی؛ تست نشده و کم‌اطمینان‌تر است.
 
 ستون با API شرکت OpenAI (و قالب Anthropic) سازگار است، پس هر ابزاری که آدرس و کلید سفارشی بپذیرد به آن وصل می‌شود. اینجا تنظیم پنج ابزار پرکاربرد آمده. هر بخش فقط چیزی را می‌گوید که مخصوص همان ابزار است.
@@ -22,7 +22,7 @@
 
 | ابزار | آدرس |
 |---|---|
-| Claude Code | `https://api.intelligence.sotoon.ir/inference/` |
+| Claude Code | `https://api.intelligence.sotoon.ir/inference` (بدون `/` آخر و بدون `/v1`) |
 | بقیه (VS Code، OpenCode، Cursor، Codex) | `https://api.intelligence.sotoon.ir/inference/v1` |
 
 **مدل را چطور انتخاب کنم؟** ابزارهای کدنویسی برای کار کردن به فراخوانی ابزار (Tool Calling) نیاز دارند. مدلی با این قابلیت و context بزرگ انتخاب کنید (مشخصات در صفحه‌ی **مدل‌ها**).
@@ -44,37 +44,84 @@ export SOTOON_API_KEY="کلید-شما"
 
 ## Claude Code
 
-**نصب:**
+Claude Code را می‌توانید با **افزونه‌ی VS Code** (ساده‌تر، بدون ترمینال) یا از **ترمینال** به ستون وصل کنید. هر دو بدون اشتراک Claude کار می‌کنند و هزینه بر اساس توکن از حساب ستون محاسبه می‌شود.
 
-```bash
-npm install -g @anthropic-ai/claude-code
+> **اپ دسکتاپ و وب Claude Code (claude.ai/code) به‌طور پیش‌فرض به ستون وصل نمی‌شوند.** وب همیشه از سرور خود Anthropic استفاده می‌کند و اپ دسکتاپ فقط با تنظیم جداگانه‌ی «Third-Party Inference» ممکن است. اشتراک Claude هم فقط برای همان‌ها لازم است، نه برای اتصال به ستون.
+
+### تنظیمات لازم (برای هر دو روش)
+
+| متغیر | مقدار | توضیح |
+|---|---|---|
+| `ANTHROPIC_BASE_URL` | `https://api.intelligence.sotoon.ir/inference` | بدون `/` آخر و بدون `/v1` |
+| `ANTHROPIC_AUTH_TOKEN` | کلید API | |
+| `ANTHROPIC_MODEL` | `MODEL_ID` | شناسه‌ی مدل از صفحه‌ی **مدل‌ها** |
+| `CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS` | `1` | قابلیت‌های آزمایشی مخصوص Anthropic را خاموش می‌کند. بدون آن مدل‌های غیر Claude خطای `400` می‌دهند. |
+
+### روش ۱: افزونه‌ی VS Code (پیشنهادی)
+
+1. در Extensions، افزونه‌ی **Claude Code** (ناشر: Anthropic) را نصب کنید. این افزونه نسخه‌ی خودش از Claude Code را همراه دارد و نصب جداگانه‌ی ترمینالی لازم نیست.
+2. `Cmd+Shift+P` (در Windows: `Ctrl+Shift+P`) را بزنید و **Preferences: Open User Settings (JSON)** را انتخاب کنید.
+3. این بلوک را داخل آکولاد اصلی فایل اضافه کنید. اگر خط قبلی ویرگول ندارد، ویرگول بگذارید:
+
+```json
+"claudeCode.environmentVariables": [
+  { "name": "ANTHROPIC_BASE_URL", "value": "https://api.intelligence.sotoon.ir/inference" },
+  { "name": "ANTHROPIC_AUTH_TOKEN", "value": "کلید-شما" },
+  { "name": "ANTHROPIC_MODEL", "value": "MODEL_ID" },
+  { "name": "CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS", "value": "1" }
+],
+"claudeCode.disableLoginPrompt": true
 ```
 
-**تنظیم آدرس و کلید.** به آدرس پایانی `/` دقت کنید.
+4. فایل را ذخیره کنید و VS Code را کامل ببندید و دوباره باز کنید (`Cmd+Q`).
+5. پنل Claude Code را باز کنید. اگر کادر پیام را دیدید (نه صفحه‌ی ورود)، وصل شده است.
 
-macOS و Linux (به `~/.zshrc` یا `~/.bashrc` اضافه کنید و `source ~/.zshrc` بزنید):
+> کلید در این فایل به‌صورت متن ساده ذخیره می‌شود. اگر Settings Sync روشن است یا فایل را به اشتراک می‌گذارید، مراقب باشید.
+
+### روش ۲: ترمینال
+
+نصب (macOS و Linux):
 
 ```bash
-export ANTHROPIC_BASE_URL="https://api.intelligence.sotoon.ir/inference/"
+curl -fsSL https://claude.ai/install.sh | bash
+```
+
+بعد ترمینال را ببندید و دوباره باز کنید و با `claude --version` مطمئن شوید نصب شده است. سپس:
+
+```bash
+export ANTHROPIC_BASE_URL="https://api.intelligence.sotoon.ir/inference"
 export ANTHROPIC_AUTH_TOKEN="کلید-شما"
+export ANTHROPIC_MODEL="MODEL_ID"
+export CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1
+claude
 ```
 
-Windows (PowerShell). برای همین نشست:
+برای ماندگار شدن، همین خطوط را به `~/.zshrc` اضافه کنید. روی Windows از `$env:NAME="..."` در PowerShell استفاده کنید. داخل Claude Code دستور `/status` آدرس و منبع کلید را نشان می‌دهد.
 
-```powershell
-$env:ANTHROPIC_BASE_URL="https://api.intelligence.sotoon.ir/inference/"
-$env:ANTHROPIC_AUTH_TOKEN="کلید-شما"
-```
+### انتخاب مدل در Claude Code
 
-**اجرا با مدل دلخواه:**
+منوی `/model` فقط مدل‌های خود Anthropic (Fable، Sonnet، Haiku) و مدل `ANTHROPIC_MODEL` را نشان می‌دهد و **لیست مدل‌های ستون را خودکار نمی‌آورد**. مدل‌های Anthropic این منو را انتخاب نکنید، چون اسمشان در ستون نیست. برای مدل دیگر:
 
-```bash
-claude --model MODEL_ID
-```
+- **تایپ اسم:** داخل Claude Code بنویسید `/model MODEL_ID`. هر اسمی که ستون بپذیرد قبول می‌شود.
+- **لیست دلخواه:** در فایل `~/.claude/settings.json` یک `modelPicker` بسازید و مدل‌های مورد نظرتان را یک بار در آن بنویسید.
+- **لیست خودکار (محدود):** با `CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY=1` فقط مدل‌هایی که اسمشان `claude` یا `anthropic` دارد در منو می‌آیند.
 
-یا برای همیشه: `export ANTHROPIC_MODEL="MODEL_ID"`.
+اسم‌های دقیق را از صفحه‌ی **مدل‌ها** بردارید.
 
-> ⚠️ *نیاز به تأیید:* Claude Code برای کارهای سبک پس‌زمینه از یک مدل کوچک جدا استفاده می‌کند. اگر خطای «مدل پیدا نشد» دیدید، یک مدل سبک از لیست انتخاب کنید و تنظیم کنید: `export ANTHROPIC_DEFAULT_HAIKU_MODEL="MODEL_ID_سبک"`
+### محدودیت‌های شناخته‌شده
+
+- **مدل‌های OpenAI (`openai/...`) فعلاً خطای `400 Unknown parameter: 'output_config'` می‌دهند.** ⚠️ *در دست بررسی توسط تیم فنی. تا رفع آن، از مدل‌های دیگر استفاده کنید.*
+- ⚠️ *Anthropic استفاده از Claude Code با مدل‌های غیر Claude را به‌صورت رسمی پشتیبانی نمی‌کند. این روش کار می‌کند ولی ممکن است بعضی قابلیت‌ها (مثل سطح تفکر) رفتار متفاوتی داشته باشند.*
+- ⚠️ *نیاز به تأیید حقوقی/محصول: مستند رسمی Claude Code استفاده از آن را به «کشورهای پشتیبانی‌شده‌ی Anthropic» محدود می‌کند.*
+
+### اگر کار نکرد
+
+| نشانه | راه‌حل |
+|---|---|
+| افزونه صفحه‌ی ورود نشان می‌دهد | `claudeCode.disableLoginPrompt` را `true` کنید، فایل را ذخیره کنید و VS Code را کامل ببندید و باز کنید. |
+| `400 ... Unknown parameter` | متغیر `CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1` را اضافه کنید. اگر برای مدل `openai/...` است، به بخش «محدودیت‌های شناخته‌شده» نگاه کنید. |
+| `Invalid model name` | شناسه‌ی مدل غلط است یا از منوی Anthropic انتخاب شده. با `/model MODEL_ID` اسم دقیق را بنویسید. |
+| `command not found: claude` (ترمینال) | ترمینال را ببندید و باز کنید. اگر نشد: `echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc` |
 
 ---
 
