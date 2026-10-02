@@ -13,6 +13,8 @@
 3. **P1 قیمت cache در صفحه‌ی مدل‌ها نیست.**
 4. **P2 هدر `x-litellm-response-cost-original` در `/v1/messages` گمراه‌کننده است** (۰.۰۷۸ در برابر ۰.۰۸۴۹/۰.۰۰۷۲ واقعی).
 
+5. **P1 پنل:** مصرف روزانه به‌ازای هر کلید قابل فیلتر و مشاهده نیست (فقط جمع ۷ روز). تطابق پنل با لاگ برای کلید عارفه تأیید شد (+۲ درخواست، +۶۳٬۰۴۲ توکن، +≈۰.۳۲$ = مجموع لاگ ۰.۳۱۵۴۱).
+
 ## مشکلات دیگر
 - P0: Claude Code با مدل‌های OpenAI مستقیم `400 Unknown parameter: 'output_config'` (احتمالاً `additional_drop_params`).
 - P1: تولید تصویر (Gemini image) خطای سرور؛ نشت اطلاعات (stack trace، `llm_provider-*`، `x-litellm-model-api-base`، نسخه‌ی LiteLLM، `x-litellm-key-spend`)؛ rate limit/۴۲۹ و متن دقیق خطای «بودجه تمام شد» تست نشده.
