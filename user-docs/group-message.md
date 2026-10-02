@@ -24,7 +24,7 @@
 - سؤال: مقیاس `x-litellm-key-spend` (۷.۷–۸.۱$) در برابر پنل (۱.۰۹$ برای ۷ روز).
 
 ## مشکلات Claude Code و API (خلاصه)
-- باز: `400 Unknown parameter: 'output_config'` روی مدل‌های OpenAI مستقیم (P0).
+- باز (P0، منبع تأیید شد: gateway): `400 Unknown parameter: 'output_config'` و `'context_management'` روی `openai/gpt-5-nano` از `/v1/messages`؛ `thinking` و مدل‌های OpenRouter مشکلی ندارند. پیشنهاد: `additional_drop_params` برای این دو فیلد روی مدل‌های OpenAI.
 - حل‌شده: `context_management` (با `CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1`)، صفحه‌ی ورود (env + `disableLoginPrompt`).
 - داکیومنت: لیست مدل دستی، نوار مدل، هویت مدل، وب/Slack/دسکتاپ، فاش شدن کلید در `settings.json`.
 - تصمیم حقوقی/محصول: مدل غیر Claude در Claude Code و کشورهای مجاز Anthropic.

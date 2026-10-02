@@ -138,6 +138,7 @@ done
 - مدل‌های OpenRouter (مثل `bytedance-seed/seed-1.6-flash`) این فیلدها را می‌پذیرند و بی‌صدا حذف می‌کنند؛ مدل‌های OpenAI مستقیم (مثل `openai/gpt-5-nano`) ردشان می‌کنند.
 - `drop_params: true` فقط پارامترهای شناخته‌شده‌ی OpenAI را حذف می‌کند. برای فیلدهای ناشناخته احتمالاً `additional_drop_params: ["output_config","context_management"]` لازم است. ⚠️ *کیارش تأیید کند.*
 - نگرانی کیارش درست است: `drop_params` سراسری ممکن است پارامترهای مهم مشتری (مثلاً `tools`، `response_format`) را بی‌صدا حذف کند. حذف فقط فیلدهای مشخص امن‌تر است.
+- **تأیید قطعی (curl، بدون Claude Code):** روی `/v1/messages` مدل `openai/gpt-5-nano`: ساده ۲۰۰؛ `output_config` ← ۴۰۰ `Unknown parameter: 'output_config'`؛ `context_management` ← ۴۰۰ `Unknown parameter: 'context_management'`؛ `thinking` ← ۲۰۰. مدل OpenRouter (`qwen/qwen3-next-80b-a3b-instruct`): هر چهار حالت ۲۰۰. یعنی LiteLLM فیلدهای مخصوص Anthropic را به OpenAI می‌فرستد (`litellm.BadRequestError: OpenAIException`)؛ مشکل از gateway است و سمت کلاینت قابل رفع نیست (`context_management` با `CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1` خاموش می‌شود ولی `output_config` را Claude Code همیشه می‌فرستد). پیشنهاد: `additional_drop_params: ["output_config","context_management"]` روی تعریف مدل‌های OpenAI؛ بعد از اصلاح هر سه حالت باید ۲۰۰ شود. جانبی: `gpt-5-nano` برای یک «Hi» ۱۴۷ توکن خروجی شمرد (reasoning جزو خروجی).
 - نمونه‌ی تکرار در `docs-tools` / پیام تیم موجود است.
 
 ---
