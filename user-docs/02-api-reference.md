@@ -1,6 +1,6 @@
 # مرجع API
 
-> ⚠️ **یادداشت داخلی (قبل از انتشار حذف شود):** هر جا ⚠️ هست یعنی هنوز روی API واقعی تأیید نشده.
+> ⚠️ **یادداشت داخلی (قبل از انتشار حذف شود):** هر جا ⚠️ هست یعنی هنوز تأیید نشده. فهرست کامل در `publish-checklist.md` است.
 
 **آدرس پایه:** `https://api.intelligence.sotoon.ir/inference/v1`
 **احراز هویت:** هدر `Authorization: Bearer کلید-شما`
@@ -11,8 +11,7 @@
 | `POST /chat/completions` | گفتگو با مدل (پرکاربردترین) |
 | `POST /embeddings` | تبدیل متن به بردار |
 | `POST /messages` | قالب Anthropic (برای Claude Code) |
-| `POST /responses` ⚠️ | قالب Responses شرکت OpenAI (تأیید نشده) |
-| تولید تصویر ⚠️ | فعلاً در دست بررسی است |
+| تولید تصویر | فعلاً در دست بررسی است |
 
 ---
 
@@ -55,7 +54,7 @@ if "MODEL_ID" not in models:
 | `messages` (الزامی) | لیست پیام‌ها با `role` (`system`، `user`، `assistant`، `tool`) و `content` |
 | `stream` | با `true` پاسخ زنده می‌گیرید |
 | `max_tokens` | سقف توکن پاسخ (به بخش «پاسخ خالی» توجه کنید) |
-| `temperature` | میزان خلاقیت. ⚠️ *بازه‌ی مجاز بسته به مدل فرق می‌کند.* |
+| `temperature` | میزان خلاقیت. بازه‌ی مجاز بسته به مدل فرق می‌کند. |
 | `tools`، `tool_choice` | فراخوانی ابزار (پایین‌تر) |
 
 پارامترهای دیگر مثل مستندات OpenAI کار می‌کنند.
@@ -71,11 +70,7 @@ if "MODEL_ID" not in models:
 
 ### پاسخ خالی
 
-مدل‌های reasoning قبل از جواب «فکر می‌کنند» و توکن‌های تفکر هم از `max_tokens` کم می‌شود. اگر سقف کوچک باشد، همه‌اش صرف تفکر می‌شود و `content` خالی برمی‌گردد و `finish_reason` برابر `length` است. `max_tokens` را بزرگ‌تر کنید یا ننویسید. تعداد توکن‌های تفکر در `usage.completion_tokens_details.reasoning_tokens` است.
-
-### کنترل میزان تفکر ⚠️
-
-نام پارامتر بسته به سازنده‌ی مدل فرق دارد: برای مدل‌های OpenAI `"reasoning_effort": "low"` (یا `medium`، `high`) و برای بقیه `"reasoning": { "effort": "low" }`. اگر مدل reasoning نداشته باشد، خطای ۴۰۰ می‌گیرید. *هر دو فرمت هنوز تست نشده‌اند.*
+مدل‌های reasoning قبل از جواب «فکر می‌کنند» و توکن‌های تفکر هم از `max_tokens` کم می‌شود. اگر سقف کوچک باشد، همه‌اش صرف تفکر می‌شود و `content` خالی برمی‌گردد و `finish_reason` برابر `length` است. `max_tokens` را بزرگ‌تر کنید یا ننویسید. تعداد توکن‌های تفکر در `usage.completion_tokens_details.reasoning_tokens` است. در `/messages` همین حالت با `stop_reason: "max_tokens"` و متن خالی برمی‌گردد. توجه: روی بعضی مدل‌های reasoning سقف خیلی کوچک (مثلاً `1`) به‌جای پاسخ خالی خطای `400` می‌دهد.
 
 ### پاسخ زنده (Streaming)
 
@@ -133,7 +128,7 @@ for chunk in stream:
 { "role": "tool", "tool_call_id": "call_abc123", "content": "۲۸ درجه، آفتابی" }
 ```
 
-همه‌ی مدل‌ها ابزار را پشتیبانی نمی‌کنند. ⚠️ *نیاز به تأیید: آیا مشخصات مدل در داشبورد پشتیبانی از ابزار را نشان می‌دهد؟*
+همه‌ی مدل‌ها ابزار را پشتیبانی نمی‌کنند. اگر مدل ابزار را نپذیرد، خطای `400` می‌گیرید (مثلاً `"auto" tool choice requires --enable-auto-tool-choice and --tool-call-parser to be set`)؛ در این صورت مدل دیگری انتخاب کنید.
 
 ---
 
@@ -154,7 +149,7 @@ curl https://api.intelligence.sotoon.ir/inference/v1/embeddings \
 
 ## قالب Anthropic
 
-`POST /messages` با **همه‌ی مدل‌ها** کار می‌کند، نه فقط Claude. `max_tokens` در این قالب الزامی و پاسخ در `content[0].text` است.
+`POST /messages` برای مدل‌های مختلف (نه فقط Claude) کار می‌کند. `max_tokens` در این قالب الزامی و پاسخ در `content[0].text` است. بعضی مدل‌ها (مثلاً مدل‌های OpenAI) فیلدهای اختصاصی Anthropic مثل `output_config` را رد می‌کنند و خطای `400 Unknown parameter` می‌دهند؛ درخواست ساده بدون این فیلدها مشکلی ندارد.
 
 ```bash
 curl https://api.intelligence.sotoon.ir/inference/v1/messages \
